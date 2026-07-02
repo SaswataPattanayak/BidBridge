@@ -458,8 +458,7 @@ async def register(body: RegisterInput, request: Request, response: Response):
 @api.post("/auth/login")
 async def login(body: LoginInput, request: Request, response: Response):
     email = body.email.lower()
-    ip = request.client.host if request.client else "unknown"
-    identifier = f"{ip}:{email}"
+    identifier = email  # email-only identifier; behind ingress request.client.host is unstable
     await check_lockout(identifier)
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(body.password, user["password_hash"]):
@@ -526,7 +525,7 @@ async def list_categories():
 async def create_category(body: CategoryInput, admin=Depends(get_current_admin)):
     doc = {"name": body.name, "icon": body.icon, "created_at": now_utc().isoformat()}
     res = await db.categories.insert_one(doc)
-    return {"id": str(res.inserted_id), **{k: v for k, v in doc.items() if k != "created_at"}}
+    return {"id": str(res.inserted_id), "name": body.name, "icon": body.icon}
 
 
 # ---------------------------------------------------------------------------
@@ -868,7 +867,7 @@ async def create_feedback(body: FeedbackInput, user=Depends(get_current_user)):
         "created_at": now_utc().isoformat(),
     }
     res = await db.feedback.insert_one(doc)
-    return {"id": str(res.inserted_id), **{k: v for k, v in doc.items()}}
+    return {"id": str(res.inserted_id), **{k: v for k, v in doc.items() if k != "_id"}}
 
 
 @api.get("/feedback/user/{user_id}")
@@ -974,6 +973,11 @@ async def leave_auction(sid, data):
 # ---------------------------------------------------------------------------
 # Wire everything up
 # ---------------------------------------------------------------------------
+@api.get("/")
+async def root():
+    return {"service": "bidbridge", "status": "ok"}
+
+
 fastapi_app.include_router(api)
 
 frontend_origin = os.environ.get("FRONTEND_URL", "http://localhost:3000")
@@ -985,11 +989,6 @@ fastapi_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@api.get("/")
-async def root():
-    return {"service": "bidbridge", "status": "ok"}
 
 
 # Combine FastAPI + Socket.IO. Mount socket.io under /api/socket.io so ingress
