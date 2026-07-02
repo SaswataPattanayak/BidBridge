@@ -8,6 +8,7 @@ import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 import Auctions from "@/pages/Auctions";
 import AuctionDetail from "@/pages/AuctionDetail";
+import About from "@/pages/About";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/auctions" element={<Auctions />} />
                 <Route path="/auctions/new" element={<Protected><CreateAuction /></Protected>} />
                 <Route path="/auctions/:id" element={<AuctionDetail />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />

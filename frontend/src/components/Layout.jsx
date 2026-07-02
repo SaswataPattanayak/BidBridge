@@ -25,12 +25,21 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-[hsl(var(--bg))] text-[#111]">
       <header className="glass-nav sticky top-0 z-40">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
-          <Link to="/" className="flex items-center gap-2 font-display text-xl font-black tracking-tight" data-testid="brand-link">
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-[#1C3F35] text-white">
-              <Gavel className="h-4 w-4" />
-            </span>
-            BidBridge
-          </Link>
+          <div className="flex items-center gap-6 md:gap-8">
+            <Link to="/" className="flex items-center gap-2 font-display text-xl font-black tracking-tight" data-testid="brand-link">
+              <span className="grid h-8 w-8 place-items-center rounded-md bg-[#1C3F35] text-white">
+                <Gavel className="h-4 w-4" />
+              </span>
+              BidBridge
+            </Link>
+            <NavLink
+              to="/about"
+              className={({ isActive }) => `hidden text-sm font-semibold md:inline-flex ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`}
+              data-testid="nav-about"
+            >
+              About
+            </NavLink>
+          </div>
 
           <nav className="hidden items-center gap-8 md:flex">
             <NavLink to="/auctions" className={({ isActive }) => `text-sm font-medium ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-auctions">
@@ -119,6 +128,7 @@ export default function Layout({ children }) {
           <div className="flex flex-col gap-4 text-lg">
             <Link to="/auctions" onClick={() => setMobileOpen(false)}>Auctions</Link>
             <Link to="/auctions?status=live" onClick={() => setMobileOpen(false)}>Live Now</Link>
+            <Link to="/about" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-about">About</Link>
             {user && <Link to="/dashboard" onClick={() => setMobileOpen(false)}>Dashboard</Link>}
             {(user?.role === "seller" || user?.role === "admin") && (
               <Link to="/auctions/new" onClick={() => setMobileOpen(false)}>Create Auction</Link>
@@ -134,17 +144,44 @@ export default function Layout({ children }) {
 
       <footer className="mt-20 border-t border-black/10 bg-[#F0EDE6]">
         <div className="mx-auto max-w-7xl px-5 py-10 md:px-8">
-          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-            <div>
-              <div className="mb-1 flex items-center gap-2 font-display text-lg font-black">
+          <div className="grid gap-8 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <div className="mb-2 flex items-center gap-2 font-display text-lg font-black">
                 <span className="grid h-7 w-7 place-items-center rounded-md bg-[#1C3F35] text-white">
                   <Gavel className="h-3.5 w-3.5" />
                 </span>
                 BidBridge
               </div>
-              <div className="text-sm text-[#5C5C5C]">Real-time auctions for collectors, curators & sellers.</div>
+              <div className="max-w-md text-sm text-[#5C5C5C]">
+                Real-time auctions for collectors, curators & sellers. Curated marketplace, transparent bidding, soft-close protection.
+              </div>
+              <div className="mono mt-4 text-xs text-[#8A8A8A]">
+                4th Floor, Innovation Block · Dr. Ambedkar Institute of Technology<br />
+                Bengaluru, Karnataka 560 056 · India
+              </div>
             </div>
+            <div>
+              <div className="overline mb-3 text-[#8A8A8A]">Platform</div>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-about">About BidBridge</Link></li>
+                <li><Link to="/about#features" className="hover:text-[#1C3F35]" data-testid="footer-features">Features</Link></li>
+                <li><Link to="/auctions" className="hover:text-[#1C3F35]">Browse auctions</Link></li>
+                <li><Link to="/register" className="hover:text-[#1C3F35]">Sell an item</Link></li>
+              </ul>
+            </div>
+            <div>
+              <div className="overline mb-3 text-[#8A8A8A]">Contact</div>
+              <ul className="space-y-2 text-sm">
+                <li><a href="mailto:contact@bidbridge.com" className="mono hover:text-[#1C3F35]">contact@bidbridge.com</a></li>
+                <li><a href="mailto:help@bidbridge.com" className="mono hover:text-[#1C3F35]">help@bidbridge.com</a></li>
+                <li><a href="tel:+919876543210" className="mono hover:text-[#1C3F35]">+91 98765 43210</a></li>
+                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-contact">All contact details →</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-8 flex items-center justify-between border-t border-black/10 pt-4">
             <div className="mono overline text-[#8A8A8A]">© BIDBRIDGE 2026</div>
+            <div className="mono overline text-[#8A8A8A]">MADE IN BENGALURU</div>
           </div>
         </div>
       </footer>
