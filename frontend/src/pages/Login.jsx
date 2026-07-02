@@ -61,6 +61,11 @@ export default function Login() {
           <div>
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required data-testid="login-password" autoComplete="current-password" />
+            <div className="mt-2 text-right">
+              <Link to="/forgot-password" className="text-xs font-semibold text-[#1C3F35] hover:underline" data-testid="login-forgot-link">
+                Forgot password?
+              </Link>
+            </div>
           </div>
           {error && <div className="rounded-md bg-[#CB5A3C]/10 px-3 py-2 text-sm text-[#CB5A3C]" data-testid="login-error">{error}</div>}
           <Button type="submit" disabled={loading} className="w-full bg-[#1C3F35] hover:bg-[#142D26]" data-testid="login-submit">

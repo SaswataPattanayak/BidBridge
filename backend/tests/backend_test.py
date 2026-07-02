@@ -524,3 +524,90 @@ def test_contact_form_field_min_length():
 def test_admin_contact_requires_admin():
     r = requests.get(f"{API}/admin/contact", timeout=10)
     assert r.status_code in (401, 403)
+
+
+
+# ---------------- Forgot / Reset Password (iteration_6) ----------------
+def _forgot(email):
+    return requests.post(f"{API}/auth/forgot-password", json={"email": email}, timeout=10)
+
+
+def _reset(token, new_password):
+    return requests.post(f"{API}/auth/reset-password", json={"token": token, "new_password": new_password}, timeout=10)
+
+
+def _login_ok(email, password):
+    r = requests.post(f"{API}/auth/login", json={"email": email, "password": password}, timeout=10)
+    return r.status_code == 200, r
+
+
+def test_forgot_password_unknown_email_no_enumeration():
+    r = _forgot(f"nonexistent_{uuid.uuid4().hex[:8]}@example.com")
+    assert r.status_code == 200
+    body = r.json()
+    assert body.get("success") is True
+    assert "message" in body
+    assert "dev_token" not in body, f"Should not reveal dev_token for unknown email: {body}"
+    assert "dev_reset_url" not in body
+
+
+def test_forgot_password_known_email_returns_dev_token():
+    r = _forgot(BIDDER["email"])
+    assert r.status_code == 200
+    body = r.json()
+    assert body.get("success") is True
+    assert body.get("expires_minutes") == 30
+    assert "dev_token" in body and len(body["dev_token"]) > 10
+    assert "/reset-password?token=" in body.get("dev_reset_url", "")
+
+
+def _reset_and_restore(creds):
+    """Helper: reset user's password via forgot flow, verify, then restore."""
+    original = creds["password"]
+    new_pw = f"NewPw!{uuid.uuid4().hex[:6]}"
+    # 1) request reset token
+    r = _forgot(creds["email"])
+    assert r.status_code == 200
+    token = r.json()["dev_token"]
+    # 2) reset it
+    r2 = _reset(token, new_pw)
+    assert r2.status_code == 200, r2.text
+    # 3) same token cannot be reused
+    r3 = _reset(token, "AnotherPw!123")
+    assert r3.status_code == 400
+    # 4) new password works, old does not
+    ok_new, _ = _login_ok(creds["email"], new_pw)
+    assert ok_new, f"login with new password failed for {creds['email']}"
+    ok_old, _ = _login_ok(creds["email"], original)
+    assert not ok_old, f"login with OLD password should have failed for {creds['email']}"
+    # 5) restore original password
+    r4 = _forgot(creds["email"])
+    tok2 = r4.json()["dev_token"]
+    r5 = _reset(tok2, original)
+    assert r5.status_code == 200
+    ok_restored, _ = _login_ok(creds["email"], original)
+    assert ok_restored, f"failed to restore password for {creds['email']}"
+
+
+def test_reset_password_flow_bidder():
+    _reset_and_restore(BIDDER)
+
+
+def test_reset_password_flow_seller():
+    _reset_and_restore(SELLER)
+
+
+def test_reset_password_flow_admin():
+    _reset_and_restore(ADMIN)
+
+
+def test_reset_password_short_password_rejected():
+    r = _forgot(BIDDER["email"])
+    token = r.json()["dev_token"]
+    r2 = _reset(token, "abc")  # <6 chars
+    assert r2.status_code == 422, r2.text
+
+
+def test_reset_password_invalid_token():
+    r = _reset("clearly-not-a-valid-token", "NewPw!12345")
+    assert r.status_code == 400

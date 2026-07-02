@@ -11,6 +11,8 @@ import AuctionDetail from "@/pages/AuctionDetail";
 import About from "@/pages/About";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import CreateAuction from "@/pages/CreateAuction";
 import Admin from "@/pages/Admin";
@@ -40,6 +42,8 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
                 <Route path="/profile" element={<Protected><Profile /></Protected>} />
                 <Route path="/checkout/:id" element={<Protected><Checkout /></Protected>} />

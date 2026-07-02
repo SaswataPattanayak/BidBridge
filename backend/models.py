@@ -56,3 +56,12 @@ class ContactInput(BaseModel):
     email: EmailStr
     subject: str = Field(min_length=3, max_length=140)
     message: str = Field(min_length=10, max_length=2000)
+
+
+class ForgotPasswordInput(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordInput(BaseModel):
+    token: str = Field(min_length=8)
+    new_password: str = Field(min_length=6)

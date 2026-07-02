@@ -143,8 +143,20 @@ export default function Layout({ children }) {
       <main>{children}</main>
 
       <footer className="mt-20 border-t border-black/10 bg-[#F0EDE6]">
-        <div className="mx-auto max-w-7xl px-5 py-10 md:px-8">
-          <div className="grid gap-8 md:grid-cols-4">
+        <div className="mx-auto max-w-7xl px-5 md:px-8">
+          <div className="py-6" data-testid="footer-brand-strip">
+            <div className="overline mb-3 text-[#8A8A8A]">FEATURED IN</div>
+            <div className="overflow-hidden rounded-lg border border-black/10 bg-[#0F1720]">
+              <img
+                src="https://customer-assets.emergentagent.com/job_bid-exchange-15/artifacts/tvx3p8mu_Screenshot%202026-07-02%20184952.png"
+                alt="Media & partner logos"
+                className="block h-24 w-full object-cover object-center md:h-32"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-8 py-8 md:grid-cols-4">
             <div className="md:col-span-2">
               <div className="mb-2 flex items-center gap-2 font-display text-lg font-black">
                 <span className="grid h-7 w-7 place-items-center rounded-md bg-[#1C3F35] text-white">
@@ -164,7 +176,9 @@ export default function Layout({ children }) {
               <div className="overline mb-3 text-[#8A8A8A]">Platform</div>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-about">About BidBridge</Link></li>
-                <li><Link to="/about#features" className="hover:text-[#1C3F35]" data-testid="footer-features">Features</Link></li>
+                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-delivery">Delivery details</Link></li>
+                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-payment">Payment details</Link></li>
+                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-features">Features</Link></li>
                 <li><Link to="/auctions" className="hover:text-[#1C3F35]">Browse auctions</Link></li>
                 <li><Link to="/register" className="hover:text-[#1C3F35]">Sell an item</Link></li>
               </ul>
@@ -176,11 +190,14 @@ export default function Layout({ children }) {
                 <li><a href="mailto:help@bidbridge.com" className="mono hover:text-[#1C3F35]">help@bidbridge.com</a></li>
                 <li><a href="tel:+918260665966" className="mono hover:text-[#1C3F35]">+91 82606 65966</a></li>
                 <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-contact">All contact details →</Link></li>
+                <li><Link to="/forgot-password" className="hover:text-[#1C3F35]" data-testid="footer-forgot">Forgot password?</Link></li>
               </ul>
             </div>
           </div>
-          <div className="mt-8 flex items-center justify-between border-t border-black/10 pt-4">
-            <div className="mono overline text-[#8A8A8A]">© BIDBRIDGE 2026</div>
+          <div className="mt-2 flex flex-col items-center justify-between gap-2 border-t border-black/10 py-5 md:flex-row" data-testid="footer-copyright">
+            <div className="mono overline text-[#8A8A8A]">
+              © BIDBRIDGE 2023–2026 · ALL RIGHTS RESERVED
+            </div>
             <div className="mono overline text-[#8A8A8A]">MADE IN ODISHA</div>
           </div>
         </div>

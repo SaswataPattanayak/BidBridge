@@ -134,6 +134,8 @@ from models import (
     FeedbackInput,
     CategoryInput,
     ContactInput,
+    ForgotPasswordInput,
+    ResetPasswordInput,
 )
 
 
@@ -472,6 +474,82 @@ async def update_profile(body: ProfileUpdate, user=Depends(get_current_user)):
         await db.users.update_one({"_id": ObjectId(user["id"])}, {"$set": update})
     doc = await db.users.find_one({"_id": ObjectId(user["id"])})
     return serialize_user(doc)
+
+
+# ---------------------------------------------------------------------------
+# PASSWORD RESET
+# ---------------------------------------------------------------------------
+import hashlib
+import secrets as pysecrets
+
+PASSWORD_RESET_TOKEN_MINUTES = 30
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+@api.post("/auth/forgot-password")
+async def forgot_password(body: ForgotPasswordInput):
+    """Generates a single-use password-reset token. In dev/no-email mode the
+    reset URL is returned in the response body so the flow is testable
+    end-to-end; production should wire an email provider and stop returning
+    reset_url in the response.
+    """
+    email = body.email.lower()
+    user = await db.users.find_one({"email": email})
+    generic_msg = {"success": True, "message": "If an account exists for that email, a reset link has been generated."}
+    if not user:
+        # Do NOT reveal whether the account exists. Return generic OK.
+        return generic_msg
+
+    raw_token = pysecrets.token_urlsafe(24)
+    token_hash = _hash_token(raw_token)
+    expires_at = now_utc() + timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)
+    await db.password_reset_tokens.insert_one({
+        "user_id": str(user["_id"]),
+        "token_hash": token_hash,
+        "expires_at": expires_at.isoformat(),
+        "used": False,
+        "created_at": now_utc().isoformat(),
+    })
+
+    frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    reset_url = f"{frontend}/reset-password?token={raw_token}"
+    log.info("Password reset issued for %s", email)
+    # In production, send this via email — for now surface it for demo use.
+    return {
+        **generic_msg,
+        "dev_reset_url": reset_url,
+        "dev_token": raw_token,
+        "expires_minutes": PASSWORD_RESET_TOKEN_MINUTES,
+    }
+
+
+@api.post("/auth/reset-password")
+async def reset_password(body: ResetPasswordInput):
+    token_hash = _hash_token(body.token)
+    doc = await db.password_reset_tokens.find_one({"token_hash": token_hash, "used": False})
+    if not doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    if parse_dt(doc["expires_at"]) < now_utc():
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    try:
+        user_oid = ObjectId(doc["user_id"])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid reset token")
+
+    await db.users.update_one(
+        {"_id": user_oid},
+        {"$set": {"password_hash": hash_password(body.new_password)}},
+    )
+    await db.password_reset_tokens.update_one({"_id": doc["_id"]}, {"$set": {"used": True}})
+    # Clear any active lockouts for this user's email so they can log in immediately.
+    user_doc = await db.users.find_one({"_id": user_oid})
+    if user_doc:
+        await db.login_attempts.delete_one({"identifier": user_doc["email"]})
+    return {"success": True, "message": "Password updated. You can log in with your new password now."}
 
 
 # ---------------------------------------------------------------------------
