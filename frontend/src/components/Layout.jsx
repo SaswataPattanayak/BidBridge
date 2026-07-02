@@ -32,29 +32,31 @@ export default function Layout({ children }) {
               </span>
               BidBridge
             </Link>
-            <NavLink
-              to="/about"
-              className={({ isActive }) => `hidden text-sm font-semibold md:inline-flex ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`}
-              data-testid="nav-about"
-            >
-              About
-            </NavLink>
           </div>
 
-          <nav className="hidden items-center gap-8 md:flex">
-            <NavLink to="/auctions" className={({ isActive }) => `text-sm font-medium ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-auctions">
+          <nav className="hidden items-center gap-7 md:flex">
+            <NavLink to="/about" className={({ isActive }) => `text-sm font-semibold ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-about">
+              About
+            </NavLink>
+            <NavLink to="/auctions" end className={({ isActive }) => `text-sm font-semibold ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-auctions">
               Auctions
             </NavLink>
-            <NavLink to="/auctions?status=live" className="text-sm font-medium text-[#111] hover:text-[#1C3F35]" data-testid="nav-live">
+            <NavLink to="/auctions?status=live" className="text-sm font-semibold text-[#111] hover:text-[#1C3F35]" data-testid="nav-live">
               Live Now
             </NavLink>
+            <NavLink to="/delivery" className={({ isActive }) => `text-sm font-semibold ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-delivery">
+              Delivery
+            </NavLink>
+            <NavLink to="/payment" className={({ isActive }) => `text-sm font-semibold ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-payment">
+              Payment
+            </NavLink>
             {user && (
-              <NavLink to="/dashboard" className={({ isActive }) => `text-sm font-medium ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-dashboard">
+              <NavLink to="/dashboard" className={({ isActive }) => `text-sm font-semibold ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-dashboard">
                 Dashboard
               </NavLink>
             )}
             {user?.role === "admin" && (
-              <NavLink to="/admin" className={({ isActive }) => `text-sm font-medium ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-admin">
+              <NavLink to="/admin" className={({ isActive }) => `text-sm font-semibold ${isActive ? "text-[#1C3F35]" : "text-[#111] hover:text-[#1C3F35]"}`} data-testid="nav-admin">
                 Admin
               </NavLink>
             )}
@@ -126,9 +128,11 @@ export default function Layout({ children }) {
             <button onClick={() => setMobileOpen(false)}><X className="h-6 w-6" /></button>
           </div>
           <div className="flex flex-col gap-4 text-lg">
+            <Link to="/about" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-about">About</Link>
             <Link to="/auctions" onClick={() => setMobileOpen(false)}>Auctions</Link>
             <Link to="/auctions?status=live" onClick={() => setMobileOpen(false)}>Live Now</Link>
-            <Link to="/about" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-about">About</Link>
+            <Link to="/delivery" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-delivery">Delivery</Link>
+            <Link to="/payment" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-payment">Payment</Link>
             {user && <Link to="/dashboard" onClick={() => setMobileOpen(false)}>Dashboard</Link>}
             {(user?.role === "seller" || user?.role === "admin") && (
               <Link to="/auctions/new" onClick={() => setMobileOpen(false)}>Create Auction</Link>
@@ -146,13 +150,22 @@ export default function Layout({ children }) {
         <div className="mx-auto max-w-7xl px-5 md:px-8">
           <div className="py-6" data-testid="footer-brand-strip">
             <div className="overline mb-3 text-[#8A8A8A]">FEATURED IN</div>
-            <div className="overflow-hidden rounded-lg border border-black/10 bg-[#0F1720]">
-              <img
-                src="https://customer-assets.emergentagent.com/job_bid-exchange-15/artifacts/tvx3p8mu_Screenshot%202026-07-02%20184952.png"
-                alt="Media & partner logos"
-                className="block h-24 w-full object-cover object-center md:h-32"
-                loading="lazy"
-              />
+            <div
+              className="rounded-lg border border-white/10 px-6 py-6 md:py-8"
+              style={{
+                background: "linear-gradient(120deg, #0F1720 0%, #1A2532 60%, #0F1720 100%)",
+              }}
+            >
+              <div
+                className="grid grid-cols-2 items-center justify-items-center gap-y-4 sm:grid-cols-3 md:grid-cols-5"
+                data-testid="footer-media-logos"
+              >
+                <MediaLogo name="The Hindu" font="serif" testId="media-logo-1" />
+                <MediaLogo name="Business Standard" font="sans" testId="media-logo-2" />
+                <MediaLogo name="YourStory" font="display" testId="media-logo-3" />
+                <MediaLogo name="Inc42" font="mono" testId="media-logo-4" />
+                <MediaLogo name="ECONOMIC TIMES" font="serif" testId="media-logo-5" />
+              </div>
             </div>
           </div>
 
@@ -176,10 +189,10 @@ export default function Layout({ children }) {
               <div className="overline mb-3 text-[#8A8A8A]">Platform</div>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-about">About BidBridge</Link></li>
-                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-delivery">Delivery details</Link></li>
-                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-payment">Payment details</Link></li>
-                <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-features">Features</Link></li>
+                <li><Link to="/delivery" className="hover:text-[#1C3F35]" data-testid="footer-delivery">Delivery details</Link></li>
+                <li><Link to="/payment" className="hover:text-[#1C3F35]" data-testid="footer-payment">Payment details</Link></li>
                 <li><Link to="/auctions" className="hover:text-[#1C3F35]">Browse auctions</Link></li>
+                <li><Link to="/auctions?status=live" className="hover:text-[#1C3F35]">Live now</Link></li>
                 <li><Link to="/register" className="hover:text-[#1C3F35]">Sell an item</Link></li>
               </ul>
             </div>
@@ -203,6 +216,22 @@ export default function Layout({ children }) {
         </div>
       </footer>
     </div>
+  );
+}
+
+function MediaLogo({ name, font, testId }) {
+  const fontClass =
+    font === "serif" ? "font-serif italic" :
+    font === "mono" ? "mono" :
+    font === "display" ? "font-display" :
+    "font-sans";
+  return (
+    <span
+      className={`${fontClass} whitespace-nowrap text-lg font-black tracking-tight text-white/85 transition hover:text-white md:text-xl`}
+      data-testid={testId}
+    >
+      {name}
+    </span>
   );
 }
 

@@ -9,6 +9,8 @@ import Home from "@/pages/Home";
 import Auctions from "@/pages/Auctions";
 import AuctionDetail from "@/pages/AuctionDetail";
 import About from "@/pages/About";
+import Delivery from "@/pages/Delivery";
+import Payment from "@/pages/Payment";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -40,6 +42,8 @@ function App() {
                 <Route path="/auctions/new" element={<Protected><CreateAuction /></Protected>} />
                 <Route path="/auctions/:id" element={<AuctionDetail />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/delivery" element={<Delivery />} />
+                <Route path="/payment" element={<Payment />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
