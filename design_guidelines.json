@@ -1,0 +1,121 @@
+{
+  "theme_and_archetype": {
+    "domain": "E-commerce & Marketplace (Real-Time Auction)",
+    "theme": "Light",
+    "archetype": "Archetype 4 (Swiss & High-Contrast) combined with Archetype 1 (Organic/Matte) for a premium, trustworthy auction house feel.",
+    "vibe": "A modern, high-end marketplace. Think premium art/watch auctions meets seamless e-commerce. Exciting but restrained—tension comes from the live data, not flashy gradients.",
+    "core_principles": [
+      "Motion-First Minimalism: Use maximum restraint in static UI, but maximum impact in real-time interactions (smooth pulses, snappy data updates).",
+      "The Hero-Cover Pattern: The landing page hero should be immersive, using high-quality lifestyle/product photography.",
+      "Data Legibility First: Bids, countdowns, and financial figures must use monospace typography for instant parsing.",
+      "Urgency through Subtlety: Use signal colors (Terracotta) for critical states like 'Outbid' or '< 1 min remaining', rather than generic red."
+    ]
+  },
+  "typography": {
+    "primary_heading": {
+      "family": "Cabinet Grotesk",
+      "weights": ["Regular", "Bold", "Black"],
+      "usage": "H1, H2, and large marketing display text. Must use tight tracking (tracking-tight)."
+    },
+    "secondary_body": {
+      "family": "Satoshi",
+      "weights": ["Regular", "Medium"],
+      "usage": "Paragraphs, standard UI text, item descriptions."
+    },
+    "monospace_data": {
+      "family": "JetBrains Mono",
+      "weights": ["Regular", "Medium", "Bold"],
+      "usage": "Countdown timers, current bid amounts, and live feed logs. Gives the 'command center / live market' feel."
+    },
+    "rules": [
+      "CRITICAL: Do NOT use Inter, Roboto, or Space Grotesk anywhere in this project.",
+      "Headlines > 32px MUST use tracking-tight.",
+      "Labels/Overlines must be uppercase, tiny (text-xs), and widely spaced (tracking-[0.2em])."
+    ]
+  },
+  "color_palette": {
+    "background": {
+      "primary": "#FAFAFA",
+      "secondary": "#F0EDE6"
+    },
+    "surface": {
+      "primary": "#FFFFFF",
+      "glass": "bg-white/70 backdrop-blur-xl border border-white/20"
+    },
+    "text": {
+      "primary": "#111111",
+      "secondary": "#5C5C5C",
+      "muted": "#8A8A8A"
+    },
+    "brand": {
+      "primary": "#1C3F35",
+      "primary_hover": "#142D26",
+      "accent_urgent": "#CB5A3C",
+      "accent_success": "#2E6D4E"
+    },
+    "rules": [
+      "CRITICAL: NO purple-gradient AI slop. Stick to the premium organic/swiss palette.",
+      "Use #CB5A3C (Terracotta) for 'Outbid' warnings, 'Ending Soon' timers, and urgent notifications.",
+      "Use #1C3F35 (Deep Forest Green) for Primary CTAs ('Place Bid', 'Create Auction') as it represents trust and commerce.",
+      "Never use pure black (#000000). Use #111111 for high contrast without eye strain."
+    ]
+  },
+  "spacing_and_layout": {
+    "grid_system": "Use Bento Grid (Mode A) for the Marketing Landing page to create visual tension. Use 'Control Room' grid (Mode B) for Admin & User Dashboards for maximum data density.",
+    "container_padding": "Generous. Use p-6 or p-8 inside primary cards to let content breathe.",
+    "border_radius": "Subtle roundness. Max 8px (rounded-lg) for a modern, crisp, 'brutalist-elegant' aesthetic.",
+    "borders": "Expose the skeleton. Use 1px border-black/5 for crisp edges on cards and list items. Never rely entirely on soft shadows."
+  },
+  "components": {
+    "strategy": "Hybrid approach. Use raw HTML/Tailwind for expressive marketing/landing sections. Heavily customize Shadcn components for forms, tables, and dashboards.",
+    "buttons": "Flat surfaces, crisp edges. Primary: bg-[#1C3F35] text-white. Hover state: -translate-y-[1px] shadow-sm.",
+    "cards": "Cardless approach or very subtle 1px border. Background should match parent (#FAFAFA) or use pure white (#FFFFFF).",
+    "inputs": "Shadcn-based. Customize focus state to: focus:ring-2 focus:ring-[#1C3F35]/20. No aggressive glowing outlines.",
+    "navigation": "Glassmorphism sticky header for marketing pages: backdrop-blur-xl bg-white/70 with a delicate 1px border-b border-black/5.",
+    "real_time_indicators": "The WOW factor. Add a tiny dot with 'animate-ping' next to 'Live' tags. Use soft green for active auctions, pulsing terracotta for auctions ending in < 1 minute.",
+    "libraries": [
+      "lucide-react (Icons)",
+      "framer-motion (For bid pulses, list reordering, toast reveals)",
+      "date-fns (Time formatting)",
+      "sonner (For 'New Bid' and 'Outbid' toasts)"
+    ]
+  },
+  "testing": {
+    "data_testid_rules": "CRITICAL: All interactive elements (buttons, links, form inputs) and key informational elements (current bid price, timer) MUST include a 'data-testid' attribute in kebab-case. Example: data-testid='place-bid-button'."
+  },
+  "media": {
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/31513715/pexels-photo-31513715.jpeg",
+        "category": "hero_or_featured",
+        "description": "Luxury vintage watches in boxes. Perfect for the hero section background or featured 'Premium Auction' banner."
+      },
+      {
+        "url": "https://images.pexels.com/photos/15074402/pexels-photo-15074402.jpeg",
+        "category": "product_item",
+        "description": "Antique watch collection. Good for a specific auction listing or category thumbnail."
+      },
+      {
+        "url": "https://images.pexels.com/photos/32562036/pexels-photo-32562036.jpeg",
+        "category": "product_item",
+        "description": "Modern minimalist white chair. Use for a high-end furniture auction listing."
+      },
+      {
+        "url": "https://images.pexels.com/photos/11591259/pexels-photo-11591259.jpeg",
+        "category": "category_thumbnail",
+        "description": "Yellow wooden chairs beside a modern table. Excellent for the 'Furniture & Design' category card."
+      },
+      {
+        "url": "https://images.pexels.com/photos/30287465/pexels-photo-30287465.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "featured_auction",
+        "description": "Vintage red sports car. Use for a high-ticket live auction feature."
+      },
+      {
+        "url": "https://images.pexels.com/photos/35505802/pexels-photo-35505802.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "product_item",
+        "description": "Detailed view of an orange vintage sports car hood. Use for gallery thumbnails in an auction detail page."
+      }
+    ],
+    "rules": "These URLs MUST be used by the main agent for seeding data and populating layouts. DO NOT use generic placeholder services like via.placeholder.com."
+  }
+}
