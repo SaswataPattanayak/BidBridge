@@ -12,7 +12,7 @@ load_dotenv(ROOT_DIR / ".env")
 import os
 import logging
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Literal, Any
 
 import socketio
@@ -650,6 +650,10 @@ async def delete_auction(auction_id: str, user=Depends(get_current_user)):
 # ---------------------------------------------------------------------------
 _bid_lock = asyncio.Lock()
 
+# Soft-close: any bid landing within this window extends end_time by the same
+# window. Prevents "sniping" the last second and keeps auctions fair.
+SOFT_CLOSE_WINDOW_SECONDS = 60
+
 
 @api.post("/auctions/{auction_id}/bids")
 async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_user)):
@@ -676,6 +680,18 @@ async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_us
 
         previous_bidder = a.get("highest_bidder_id")
 
+        # Soft-close extension logic ------------------------------------------------
+        end_dt = parse_dt(a["end_time"])
+        seconds_remaining = (end_dt - now_utc()).total_seconds()
+        extended = False
+        new_end_iso = a["end_time"]
+        if 0 < seconds_remaining <= SOFT_CLOSE_WINDOW_SECONDS:
+            new_end_dt = now_utc() + timedelta(seconds=SOFT_CLOSE_WINDOW_SECONDS)
+            # Only push out (never pull in) — extension always moves forward
+            if new_end_dt > end_dt:
+                new_end_iso = new_end_dt.isoformat()
+                extended = True
+
         bid_doc = {
             "auction_id": auction_id,
             "user_id": user["id"],
@@ -684,17 +700,17 @@ async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_us
             "created_at": now_utc().isoformat(),
         }
         res = await db.bids.insert_one(bid_doc)
+        update_set: dict = {
+            "current_bid": body.amount,
+            "highest_bidder_id": user["id"],
+            "highest_bidder_name": user["name"],
+            "status": "live",
+        }
+        if extended:
+            update_set["end_time"] = new_end_iso
         await db.auctions.update_one(
             {"_id": oid},
-            {
-                "$set": {
-                    "current_bid": body.amount,
-                    "highest_bidder_id": user["id"],
-                    "highest_bidder_name": user["name"],
-                    "status": "live",
-                },
-                "$inc": {"bid_count": 1},
-            },
+            {"$set": update_set, "$inc": {"bid_count": 1}},
         )
 
     bid_payload = {
@@ -706,26 +722,35 @@ async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_us
         "created_at": bid_doc["created_at"],
         "current_bid": body.amount,
         "bid_count": a.get("bid_count", 0) + 1,
+        "end_time": iso(parse_dt(new_end_iso)),
+        "extended": extended,
+        "extension_seconds": SOFT_CLOSE_WINDOW_SECONDS if extended else 0,
     }
     # Broadcast bid update to everyone in the auction room
     await sio.emit("new_bid", bid_payload, room=f"auction:{auction_id}")
 
     # Notify previous highest bidder
     if previous_bidder and previous_bidder != user["id"]:
+        outbid_msg = f"Your bid on '{a['title']}' was outbid. New high bid: ${body.amount:.2f}."
+        if extended:
+            outbid_msg += f" Auction extended by {SOFT_CLOSE_WINDOW_SECONDS}s — you still have time to bid back."
         await create_notification(
             previous_bidder,
             "outbid",
             "You've been outbid!",
-            f"Your bid on '{a['title']}' was outbid. New high bid: ${body.amount:.2f}.",
+            outbid_msg,
             auction_id=auction_id,
         )
     # Notify seller
     if a["seller_id"] != user["id"]:
+        seller_msg = f"{user['name']} bid ${body.amount:.2f} on '{a['title']}'."
+        if extended:
+            seller_msg += f" Auction extended by {SOFT_CLOSE_WINDOW_SECONDS}s (soft-close)."
         await create_notification(
             a["seller_id"],
             "new_bid",
             "New bid on your auction",
-            f"{user['name']} bid ${body.amount:.2f} on '{a['title']}'.",
+            seller_msg,
             auction_id=auction_id,
         )
     return bid_payload

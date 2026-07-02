@@ -25,6 +25,7 @@ export default function AuctionDetail() {
   const [watchlisted, setWatchlisted] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [pulse, setPulse] = useState(false);
+  const [extendedFlash, setExtendedFlash] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -61,6 +62,7 @@ export default function AuctionDetail() {
         bid_count: payload.bid_count,
         highest_bidder_id: payload.user_id,
         highest_bidder_name: payload.user_name,
+        end_time: payload.end_time || prev.end_time,
         recent_bids: [{
           id: payload.id,
           user_id: payload.user_id,
@@ -71,6 +73,13 @@ export default function AuctionDetail() {
       } : prev);
       setPulse(true);
       setTimeout(() => setPulse(false), 900);
+      if (payload.extended) {
+        setExtendedFlash(true);
+        setTimeout(() => setExtendedFlash(false), 4500);
+        toast.warning("Auction extended", {
+          description: `Bid landed in the final ${payload.extension_seconds}s — end time pushed out by ${payload.extension_seconds}s.`,
+        });
+      }
     };
     const statusHandler = (payload) => {
       if (payload.auction_id !== id) return;
@@ -257,8 +266,17 @@ export default function AuctionDetail() {
 
               <div className="mb-6 flex items-center justify-between border-y border-black/5 py-3">
                 <div>
-                  <div className="overline mb-1 text-[#8A8A8A]">
-                    {isUpcoming ? "Starts In" : isLive ? "Ends In" : "Closed"}
+                  <div className="overline mb-1 flex items-center gap-2 text-[#8A8A8A]">
+                    <span>{isUpcoming ? "Starts In" : isLive ? "Ends In" : "Closed"}</span>
+                    {extendedFlash && (
+                      <span
+                        className="mono inline-flex items-center gap-1 rounded-full bg-[#CB5A3C]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#CB5A3C]"
+                        data-testid="soft-close-badge"
+                      >
+                        <span className="urgent-dot live-dot" />
+                        +60s Extended
+                      </span>
+                    )}
                   </div>
                   <CountdownTimer endTime={a.end_time} startTime={a.start_time} status={a.status} size="lg" />
                 </div>
