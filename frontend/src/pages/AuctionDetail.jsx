@@ -11,6 +11,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import { toast } from "sonner";
 import { Heart, Gavel, User as UserIcon, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { firstImage, AUCTION_PLACEHOLDER } from "@/lib/images";
 
 export default function AuctionDetail() {
   const { id } = useParams();
@@ -150,7 +151,7 @@ export default function AuctionDetail() {
         {/* Gallery */}
         <div className="lg:col-span-7">
           <div className="aspect-[4/3] overflow-hidden rounded-lg border border-black/10 bg-[#F0EDE6]">
-            <img src={a.images?.[activeImage] || a.images?.[0]} alt={a.title} className="h-full w-full object-cover" data-testid="auction-main-image" />
+            <img src={a.images?.[activeImage] || firstImage(a)} alt={a.title} className="h-full w-full object-cover" data-testid="auction-main-image" />
           </div>
           {a.images?.length > 1 && (
             <div className="mt-3 grid grid-cols-6 gap-2">

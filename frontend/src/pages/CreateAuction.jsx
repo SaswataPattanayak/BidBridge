@@ -65,6 +65,10 @@ export default function CreateAuction() {
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!form.images.length) {
+      setError("Please add at least one photo — you can paste an image URL or click a sample.");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {

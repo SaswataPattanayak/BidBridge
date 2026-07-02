@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { firstImage } from "@/lib/images";
 import AuctionCard from "@/components/AuctionCard";
 import CountdownTimer from "@/components/CountdownTimer";
 
@@ -62,7 +63,7 @@ export default function Home() {
             data-testid="hero-featured-auction"
           >
             <div className="absolute inset-0">
-              <img src={featured.images?.[0]} alt={featured.title} className="h-full w-full object-cover" />
+              <img src={firstImage(featured)} alt={featured.title} className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#111]/85 via-[#111]/20 to-transparent" />
             </div>
             <div className="relative flex h-[440px] flex-col justify-between p-6 md:h-[520px]">

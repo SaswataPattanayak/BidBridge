@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import AuctionCard from "@/components/AuctionCard";
 import { formatDistanceToNow } from "date-fns";
 import { useNotifications } from "@/context/NotificationsContext";
+import { firstImage } from "@/lib/images";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ export default function Dashboard() {
             <div className="card-surface divide-y divide-black/5" data-testid="my-bids-list">
               {myBids.map((a) => (
                 <Link key={a.id} to={`/auctions/${a.id}`} className="flex items-center gap-4 p-4 hover:bg-black/[0.02]">
-                  <img src={a.images?.[0]} alt="" className="h-16 w-16 rounded-md object-cover" />
+                  <img src={firstImage(a)} alt="" className="h-16 w-16 rounded-md object-cover" />
                   <div className="flex-1 min-w-0">
                     <div className="mb-1 flex items-center gap-2">
                       <span className="truncate font-semibold">{a.title}</span>

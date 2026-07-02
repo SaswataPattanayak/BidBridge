@@ -1,0 +1,29 @@
+{
+  "summary": "Iteration_3 verified the broken-hero-image fix + related regression. Backend: 22/22 pytest tests pass, including the new test_create_auction_empty_images_rejected (BUG-2, POST /api/auctions with images=[] -> 422). Frontend: (a) Home hero (data-testid='hero-featured-auction') renders with a real image (naturalWidth=3024 for Pexels fallback) — PRIMARY BUG fixed. All 6 auction cards on home page have images with naturalWidth>0, no broken slots. (b) Create Auction page shows the friendly inline error 'Please add at least one photo — you can paste an image URL or click a sample.' when submitted without images and does NOT hit the backend (0 POST /api/auctions calls) — BUG-3 fixed. All regression flows (login for 3 roles, seeded auction listing/filter, auction detail, bidding, soft-close, Socket.IO new_bid, watchlist, notifications, feedback, admin console) continue to work.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/auctions/new (CreateAuction)", "issues": ["Native browser HTML5 required-field tooltip fires before the custom images error — first-time users may see 'Please fill out this field' on description/category before the friendly photo error. Cosmetic only, still short-circuits correctly. Also carrying over: still uses native <input type=datetime-local> instead of shadcn Calendar."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional) Consider moving the images.length check to run BEFORE HTML5 required validation (e.g., add noValidate to <form> or check images earlier and scroll to error) so the user always sees the same friendly copy first.",
+    "(Optional / carry-over) Replace native datetime-local pickers with shadcn Calendar on /auctions/new."
+  ],
+  "critical_code_review_comments": [
+    "firstImage()/AUCTION_PLACEHOLDER helper is a clean single-source-of-truth fix — every image consumer (Home, AuctionCard, AuctionDetail, Dashboard, Checkout) now routes through it. Nice.",
+    "Backend Pydantic Field(default_factory=list, min_length=1) correctly rejects images=[] with 422 — verified via new pytest and via UI short-circuit.",
+    "server.py still 1000+ lines — modularization suggestion from iteration_2 unchanged."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (22/22)", "frontend": "100% (PRIMARY hero-image bug, BUG-3 inline error, and regression flows all verified)"},
+  "test_credentials": "admin@bidbridge.com / Admin@12345 · seller@bidbridge.com / Seller@12345 · bidder@bidbridge.com / Bidder@12345 — all validated.",
+  "seed_data_creation": "backend_test.py creates TEST_-prefixed auctions with a valid Pexels image (no more empty-image auctions).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "backend_test.py now has 22 tests (added test_create_auction_empty_images_rejected). Run: cd /app/backend && python -m pytest tests/backend_test.py -v. Any test that creates auctions must include a non-empty images array (backend enforces min_length=1). Hero-image fix verified against external URL https://bid-exchange-15.preview.emergentagent.com/ via naturalWidth check.",
+  "rca_of_the_issue": "Root cause: (1) TEST auctions created by previous backend_test.py runs had images=[], and (2) Home.jsx hero rendered featured.images?.[0] with no fallback — so the newest auction (first in the sort) rendered as a broken <img>. Fix combines defensive frontend (firstImage() with Pexels placeholder) + preventative backend (Pydantic min_length=1 on AuctionInput.images) + DB cleanup + updated tests. Verified: hero image loads (naturalWidth=3024), all card images load, POST with images=[] returns 422, UI form short-circuits with friendly copy before hitting backend."
+}

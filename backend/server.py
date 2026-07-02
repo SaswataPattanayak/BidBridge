@@ -147,7 +147,7 @@ class AuctionInput(BaseModel):
     title: str = Field(min_length=3, max_length=140)
     description: str = Field(min_length=10, max_length=4000)
     category: str
-    images: List[str] = Field(default_factory=list)
+    images: List[str] = Field(default_factory=list, min_length=1)
     starting_price: float = Field(gt=0)
     min_increment: float = Field(gt=0, default=1)
     start_time: datetime

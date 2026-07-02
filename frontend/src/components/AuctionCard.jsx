@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import CountdownTimer from "./CountdownTimer";
+import { firstImage } from "@/lib/images";
 
 function statusBadge(status) {
   if (status === "live") return { text: "LIVE", cls: "text-[#2E6D4E]", dot: "live-dot" };
@@ -15,7 +16,7 @@ function countdownLabel(status) {
 }
 
 export default function AuctionCard({ a }) {
-  const img = a.images?.[0] || "https://images.pexels.com/photos/31513715/pexels-photo-31513715.jpeg";
+  const img = firstImage(a);
   const badge = statusBadge(a.status);
 
   return (

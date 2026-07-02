@@ -137,7 +137,7 @@ def test_create_auction_as_seller_and_end_before_start():
         "title": f"TEST Auction {uuid.uuid4().hex[:6]}",
         "description": "A test auction created by backend_test.py",
         "category": "Electronics",
-        "images": [],
+        "images": ["https://images.pexels.com/photos/31513715/pexels-photo-31513715.jpeg"],
         "starting_price": 100.0,
         "min_increment": 5.0,
         "start_time": (now - timedelta(minutes=1)).isoformat(),
@@ -159,6 +159,27 @@ def test_create_auction_as_seller_and_end_before_start():
     bad["start_time"] = now.isoformat()
     r2 = s.post(f"{API}/auctions", json=bad, timeout=10)
     assert r2.status_code == 400
+
+
+def test_create_auction_empty_images_rejected():
+    """BUG-2: Pydantic min_length=1 on AuctionInput.images -> empty list returns 422."""
+    s = login_session(SELLER)
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    payload = {
+        "title": f"TEST NoImages {uuid.uuid4().hex[:6]}",
+        "description": "should be rejected",
+        "category": "Electronics",
+        "images": [],
+        "starting_price": 10.0,
+        "min_increment": 1.0,
+        "start_time": (now - timedelta(minutes=1)).isoformat(),
+        "end_time": (now + timedelta(hours=1)).isoformat(),
+        "condition": "New",
+    }
+    r = s.post(f"{API}/auctions", json=payload, timeout=10)
+    assert r.status_code == 422, f"Expected 422 for empty images, got {r.status_code}: {r.text}"
+
 
 
 # ---------------- Bidding ----------------
@@ -344,7 +365,7 @@ def test_soft_close_extends_end_time():
         "title": f"TEST SoftClose {uuid.uuid4().hex[:6]}",
         "description": "Soft close regression",
         "category": "Electronics",
-        "images": [],
+        "images": ["https://images.pexels.com/photos/31513715/pexels-photo-31513715.jpeg"],
         "starting_price": 50.0,
         "min_increment": 5.0,
         "start_time": (now - timedelta(minutes=1)).isoformat(),

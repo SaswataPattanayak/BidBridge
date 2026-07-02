@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Check, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { firstImage } from "@/lib/images";
 
 export default function Checkout() {
   const { id } = useParams();
@@ -131,7 +132,7 @@ export default function Checkout() {
         <aside className="card-surface h-fit p-6">
           <h3 className="mb-4 font-display text-lg font-bold">Order summary</h3>
           <div className="mb-4 overflow-hidden rounded-md">
-            <img src={a.images?.[0]} alt="" className="aspect-video w-full object-cover" />
+            <img src={firstImage(a)} alt="" className="aspect-video w-full object-cover" />
           </div>
           <div className="mb-2 font-semibold">{a.title}</div>
           <div className="mb-4 text-xs text-[#8A8A8A]">Sold by {a.seller_name}</div>
