@@ -198,7 +198,7 @@ export default function Layout({ children }) {
             <div className="mono overline text-[#8A8A8A]">
               © BIDBRIDGE 2023–2026 · ALL RIGHTS RESERVED
             </div>
-            <div className="mono overline text-[#8A8A8A]">MADE IN ODISHA</div>
+            <div className="mono overline text-[#8A8A8A]" data-testid="footer-madein">MADE IN ODISHA</div>
           </div>
         </div>
       </footer>
