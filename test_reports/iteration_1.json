@@ -1,0 +1,48 @@
+{
+  "summary": "Ran 17 backend integration tests (pytest) + Playwright E2E across home/browse/login/auction detail/bid/watchlist/admin/create-auction pages. Backend: 13/17 passing. Frontend: core flows all work (auth, browse, filter, bid placement with live UI update, watchlist toggle, admin dashboard, seller create-auction form loads). Found 3 real backend bugs (feedback POST 500, brute-force lockout bypassable via load-balanced ingress IPs, GET /api/ returns 404 due to route registration order). Real-time bidding via Socket.IO verified: placed bid in UI, current_bid updated from $100 -> $110 in place.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/feedback", "issue": "Returns 500 - ObjectId serialization error. Code `return {\"id\": str(res.inserted_id), **doc.items()}` spreads the inserted doc which motor mutates to include `_id: ObjectId`. FastAPI can't serialize ObjectId. Fix: exclude _id from spread (e.g. {**{k:v for k,v in doc.items() if k != '_id'}}). Same anti-pattern likely present in POST /api/categories (line 529).", "priority": "HIGH"},
+      {"endpoint": "POST /api/auth/login", "issue": "Brute-force lockout is BYPASSABLE. `check_lockout` identifier is `{request.client.host}:{email}`, but behind kubernetes ingress requests are load-balanced across multiple ingress pods (observed 10.219.2.4 and 10.219.2.7), so counters never reach 5 for a single identifier. After 7 wrong-password attempts we still got 401 instead of 429. Fix: use only email as identifier (or read X-Forwarded-For), and enable ProxyHeadersMiddleware.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/", "issue": "Returns 404. The @api.get('/') root route is declared AFTER fastapi_app.include_router(api) on line 977, so it is not registered. Move include_router below the route definition or add root route earlier."},
+      {"endpoint": "POST /api/categories", "issue": "Same _id spread pattern as feedback (line 529). Will 500 if invoked (untested — only admin can invoke)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/auctions/new (CreateAuction)", "issues": ["Uses browser-native datetime-local pickers instead of shadcn calendar component — inconsistent with the modern marketplace design vibe. Consider replacing with shadcn <Calendar> + <Popover>."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix POST /api/feedback ObjectId leak (exclude _id from response spread). Same fix for POST /api/categories.",
+    "Fix brute-force lockout: strip IP from identifier (use email only) OR configure ProxyHeadersMiddleware + trust X-Forwarded-For so a single client IP is seen.",
+    "Fix GET /api/ 404 by re-ordering router include or moving the '/' route before include_router.",
+    "(Optional design) Replace native datetime-local pickers on /auctions/new with shadcn Calendar for consistency."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 998 lines — should be split into modules (auth, auctions, bids, admin, sockets) for maintainability.",
+    "CORS_ORIGINS env var is set to '*' in .env but not used anywhere; server.py hard-codes allow_origins to [FRONTEND_URL, 'http://localhost:3000']. Remove the unused env var or wire it up.",
+    "Global asyncio.Lock (_bid_lock) serializes ALL bids across ALL auctions. For a busy platform this becomes a bottleneck — should be per-auction lock (e.g., a dict of locks keyed by auction_id) or use MongoDB findOneAndUpdate atomic operation.",
+    "auction_ticker runs every 3s and iterates over full collections; for scale, add index-backed queries `find({status:'upcoming', start_time:{$lte: now}})` instead of loading and filtering in Python.",
+    "POST /api/feedback and POST /api/categories return spread of MongoDB doc that includes ObjectId `_id` — must exclude _id.",
+    "brute-force identifier uses request.client.host which is unreliable behind ingress/proxy.",
+    "@api.get('/') added after include_router — route unreachable (dead code)."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "76% (13/17)", "frontend": "~95% (all critical flows working)"},
+  "test_credentials": "admin@bidbridge.com / Admin@12345 · seller@bidbridge.com / Seller@12345 · bidder@bidbridge.com / Bidder@12345 — all validated.",
+  "seed_data_creation": "Backend auto-seeds admin/seller/bidder users, 8 categories, and 4 demo auctions on startup. Verified. Backend_test.py also creates a few TEST_ prefixed users and auctions.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "backend_test.py covers auth, auction CRUD, bidding, watchlist, notifications, feedback, admin. All 3 failing tests reflect genuine backend bugs (not test bugs). After main agent fixes: (1) feedback ObjectId leak, (2) brute-force identifier, (3) root route ordering — re-run `cd /app/backend && python -m pytest tests/backend_test.py -v` and expect 17/17. Socket.IO real-time bid propagation confirmed working via UI (bid $100->$110 updated in place with pulse animation).",
+  "rca of the issue": {
+    "feedback_500": "server.py line 871 `return {'id': str(res.inserted_id), **{k:v for k,v in doc.items()}}` — after `await db.feedback.insert_one(doc)`, motor mutates `doc` to include the newly-created `_id: ObjectId(...)`. Spreading doc.items() puts an ObjectId under the `_id` key which FastAPI's jsonable_encoder cannot serialize (raises TypeError: ObjectId is not iterable). Fix: `**{k:v for k,v in doc.items() if k != '_id'}`.",
+    "brute_force_bypass": "Backend runs behind multiple ingress pods. Each backend replica sees `request.client.host` = the immediate hop (an ingress pod IP). Observed values: 10.219.2.4 and 10.219.2.7. Because the login_attempts identifier is `{ip}:{email}`, load-balancing distributes attempts across at least two identifiers, and neither reaches the MAX_ATTEMPTS=5 threshold quickly. Verified: 7 sequential wrong-password logins all returned 401 (never 429), with DB showing two rows for the same email under two different IPs.",
+    "root_404": "server.py line 977 `fastapi_app.include_router(api)` is called BEFORE line 990-992 `@api.get('/')`. FastAPI snapshots router routes at include time, so the '/' handler is never mounted. Either move include_router to end of file, or define root route earlier."
+  }
+}
