@@ -464,3 +464,63 @@ def test_socketio_new_bid_event():
     evt = received[0]
     for k in ["end_time", "extended", "extension_seconds", "amount", "current_bid"]:
         assert k in evt, f"new_bid payload missing '{k}': {evt}"
+
+
+
+# ---------------- Contact form (NEW iteration_5) ----------------
+def test_contact_form_empty_payload_422():
+    r = requests.post(f"{API}/contact", json={}, timeout=10)
+    assert r.status_code == 422, r.text
+
+
+def test_contact_form_submit_and_admin_list_and_read():
+    unique_subj = f"TEST subject {uuid.uuid4().hex[:8]}"
+    payload = {
+        "name": "TEST User",
+        "email": "test_contact@example.com",
+        "subject": unique_subj,
+        "message": "This is a TEST message body long enough to pass validation.",
+    }
+    r = requests.post(f"{API}/contact", json=payload, timeout=10)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("success") is True
+    assert "id" in body and isinstance(body["id"], str) and len(body["id"]) > 0
+    sub_id = body["id"]
+
+    # Non-admin cannot list
+    b_sess = login_session(BIDDER)
+    r_forbid = b_sess.get(f"{API}/admin/contact", timeout=10)
+    assert r_forbid.status_code == 403
+
+    # Admin can list and see the new submission
+    a_sess = login_session(ADMIN)
+    r_list = a_sess.get(f"{API}/admin/contact", timeout=10)
+    assert r_list.status_code == 200
+    subs = r_list.json()
+    match = [s for s in subs if s["id"] == sub_id]
+    assert match, "New submission missing from admin list"
+    m = match[0]
+    assert m["subject"] == unique_subj
+    assert m["read"] is False
+    assert isinstance(m["created_at"], str)
+
+    # Mark as read
+    r_read = a_sess.post(f"{API}/admin/contact/{sub_id}/read", timeout=10)
+    assert r_read.status_code == 200
+    r_list2 = a_sess.get(f"{API}/admin/contact", timeout=10)
+    m2 = [s for s in r_list2.json() if s["id"] == sub_id][0]
+    assert m2["read"] is True
+
+
+def test_contact_form_field_min_length():
+    # too short message
+    r = requests.post(f"{API}/contact", json={
+        "name": "TE", "email": "a@b.co", "subject": "hi!", "message": "short"
+    }, timeout=10)
+    assert r.status_code == 422
+
+
+def test_admin_contact_requires_admin():
+    r = requests.get(f"{API}/admin/contact", timeout=10)
+    assert r.status_code in (401, 403)

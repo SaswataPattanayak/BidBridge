@@ -123,52 +123,18 @@ def compute_status(a: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Models
+# Models — moved into models.py
 # ---------------------------------------------------------------------------
-class RegisterInput(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=6)
-    name: str = Field(min_length=1, max_length=80)
-    role: Literal["bidder", "seller"] = "bidder"
-
-
-class LoginInput(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class ProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    bio: Optional[str] = None
-    avatar: Optional[str] = None
-
-
-class AuctionInput(BaseModel):
-    title: str = Field(min_length=3, max_length=140)
-    description: str = Field(min_length=10, max_length=4000)
-    category: str
-    images: List[str] = Field(default_factory=list, min_length=1)
-    starting_price: float = Field(gt=0)
-    min_increment: float = Field(gt=0, default=1)
-    start_time: datetime
-    end_time: datetime
-    condition: Literal["New", "Like New", "Used", "Refurbished"] = "Used"
-
-
-class BidInput(BaseModel):
-    amount: float = Field(gt=0)
-
-
-class FeedbackInput(BaseModel):
-    auction_id: str
-    to_user_id: str
-    rating: int = Field(ge=1, le=5)
-    comment: str = Field(default="", max_length=500)
-
-
-class CategoryInput(BaseModel):
-    name: str
-    icon: Optional[str] = None
+from models import (
+    RegisterInput,
+    LoginInput,
+    ProfileUpdate,
+    AuctionInput,
+    BidInput,
+    FeedbackInput,
+    CategoryInput,
+    ContactInput,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -904,6 +870,49 @@ async def user_feedback(user_id: str):
         "comment": f.get("comment", ""),
         "created_at": iso(parse_dt(f["created_at"])),
     } for f in docs]
+
+
+# ---------------------------------------------------------------------------
+# CONTACT FORM
+# ---------------------------------------------------------------------------
+@api.post("/contact")
+async def submit_contact(body: ContactInput):
+    """Public endpoint — anyone (logged in or not) can submit a contact message."""
+    doc = {
+        "name": body.name.strip(),
+        "email": body.email.lower(),
+        "subject": body.subject.strip(),
+        "message": body.message.strip(),
+        "read": False,
+        "created_at": now_utc().isoformat(),
+    }
+    res = await db.contact_submissions.insert_one(doc)
+    return {"id": str(res.inserted_id), "success": True}
+
+
+@api.get("/admin/contact")
+async def list_contact_submissions(admin=Depends(get_current_admin)):
+    cursor = db.contact_submissions.find({}).sort("created_at", -1).limit(200)
+    docs = await cursor.to_list(200)
+    return [{
+        "id": str(d["_id"]),
+        "name": d["name"],
+        "email": d["email"],
+        "subject": d["subject"],
+        "message": d["message"],
+        "read": d.get("read", False),
+        "created_at": iso(parse_dt(d["created_at"])),
+    } for d in docs]
+
+
+@api.post("/admin/contact/{submission_id}/read")
+async def mark_contact_read(submission_id: str, admin=Depends(get_current_admin)):
+    try:
+        oid = ObjectId(submission_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Not found")
+    await db.contact_submissions.update_one({"_id": oid}, {"$set": {"read": True}})
+    return {"success": True}
 
 
 # ---------------------------------------------------------------------------

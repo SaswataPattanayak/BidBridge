@@ -13,11 +13,13 @@ export default function Admin() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [auctions, setAuctions] = useState([]);
+  const [messages, setMessages] = useState([]);
 
   const load = () => {
     api.get("/admin/stats").then(({ data }) => setStats(data)).catch(() => {});
     api.get("/admin/users").then(({ data }) => setUsers(data)).catch(() => {});
     api.get("/admin/auctions").then(({ data }) => setAuctions(data)).catch(() => {});
+    api.get("/admin/contact").then(({ data }) => setMessages(data)).catch(() => {});
   };
   useEffect(() => { if (user?.role === "admin") load(); }, [user]);
 
@@ -43,6 +45,17 @@ export default function Admin() {
     }
   };
 
+  const markMessageRead = async (id) => {
+    try {
+      await api.post(`/admin/contact/${id}/read`);
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, read: true } : m)));
+    } catch (e) {
+      toast.error(e.response?.data?.detail || e.message);
+    }
+  };
+
+  const unreadMessages = messages.filter((m) => !m.read).length;
+
   if (user?.role !== "admin") {
     return <div className="mx-auto max-w-3xl px-5 py-20 text-center text-[#8A8A8A]" data-testid="admin-forbidden">Admin access only.</div>;
   }
@@ -54,18 +67,22 @@ export default function Admin() {
         <h1 className="font-display text-4xl font-black md:text-5xl">Platform overview</h1>
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-6">
         <Stat label="Users" value={stats?.users ?? "—"} />
         <Stat label="Auctions" value={stats?.auctions ?? "—"} />
         <Stat label="Live" value={stats?.live_auctions ?? "—"} accent="success" />
         <Stat label="Bids" value={stats?.bids ?? "—"} />
         <Stat label="Notifications" value={stats?.notifications ?? "—"} />
+        <Stat label="Msg. unread" value={unreadMessages} accent={unreadMessages ? "urgent" : undefined} />
       </div>
 
       <Tabs defaultValue="users">
         <TabsList data-testid="admin-tabs">
           <TabsTrigger value="users" data-testid="admin-tab-users">Users</TabsTrigger>
           <TabsTrigger value="auctions" data-testid="admin-tab-auctions">Auctions</TabsTrigger>
+          <TabsTrigger value="messages" data-testid="admin-tab-messages">
+            Messages{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -136,6 +153,49 @@ export default function Admin() {
               </tbody>
             </table>
           </div>
+        </TabsContent>
+
+        <TabsContent value="messages">
+          {messages.length === 0 ? (
+            <div className="card-surface p-16 text-center text-[#8A8A8A]" data-testid="admin-messages-empty">
+              No contact submissions yet.
+            </div>
+          ) : (
+            <div className="space-y-3" data-testid="admin-messages-list">
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`card-surface p-5 ${m.read ? "" : "border-[#1C3F35]/40 bg-[#F0EDE6]/40"}`}
+                  data-testid={`admin-message-${m.id}`}
+                >
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-lg font-bold">{m.subject}</span>
+                      {!m.read && <Badge className="bg-[#CB5A3C]">NEW</Badge>}
+                    </div>
+                    <span className="mono text-xs text-[#8A8A8A]">
+                      {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+                    <span className="font-semibold">{m.name}</span>
+                    <a href={`mailto:${m.email}`} className="mono text-[#1C3F35] hover:underline">{m.email}</a>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm text-[#111]">{m.message}</p>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button asChild size="sm" variant="outline" data-testid={`admin-message-reply-${m.id}`}>
+                      <a href={`mailto:${m.email}?subject=Re: ${encodeURIComponent(m.subject)}`}>Reply by email</a>
+                    </Button>
+                    {!m.read && (
+                      <Button size="sm" className="bg-[#1C3F35] hover:bg-[#142D26]" onClick={() => markMessageRead(m.id)} data-testid={`admin-message-mark-read-${m.id}`}>
+                        Mark read
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

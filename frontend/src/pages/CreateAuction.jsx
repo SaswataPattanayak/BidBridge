@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import DateTimePicker from "@/components/DateTimePicker";
 
 const DEFAULT_IMAGES = [
   "https://images.pexels.com/photos/31513715/pexels-photo-31513715.jpeg",
@@ -34,8 +35,8 @@ export default function CreateAuction() {
     images: [],
     starting_price: "",
     min_increment: "10",
-    start_time: toLocalInput(now),
-    end_time: toLocalInput(new Date(now.getTime() + 24 * 60 * 60 * 1000)),
+    start_time: now,
+    end_time: new Date(now.getTime() + 24 * 60 * 60 * 1000),
     condition: "Used",
   });
 
@@ -69,14 +70,22 @@ export default function CreateAuction() {
       setError("Please add at least one photo — you can paste an image URL or click a sample.");
       return;
     }
+    if (!form.start_time || !form.end_time) {
+      setError("Please pick both a start and end date/time.");
+      return;
+    }
+    if (form.end_time <= form.start_time) {
+      setError("End time must be after start time.");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
         ...form,
         starting_price: Number(form.starting_price),
         min_increment: Number(form.min_increment),
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: new Date(form.end_time).toISOString(),
+        start_time: form.start_time.toISOString(),
+        end_time: form.end_time.toISOString(),
       };
       const { data } = await api.post("/auctions", payload);
       toast.success("Auction created!", { description: `'${data.title}' is now listed.` });
@@ -179,12 +188,24 @@ export default function CreateAuction() {
               <Input id="mi" type="number" step="0.01" min="0.01" value={form.min_increment} onChange={upd("min_increment")} required data-testid="create-min-increment" />
             </div>
             <div>
-              <Label htmlFor="st">Start time</Label>
-              <Input id="st" type="datetime-local" value={form.start_time} onChange={upd("start_time")} required data-testid="create-start-time" />
+              <Label>Start time</Label>
+              <DateTimePicker
+                value={form.start_time}
+                onChange={(d) => setForm((p) => ({ ...p, start_time: d }))}
+                testId="create-start"
+                placeholder="Pick start date"
+                minDate={new Date()}
+              />
             </div>
             <div>
-              <Label htmlFor="et">End time</Label>
-              <Input id="et" type="datetime-local" value={form.end_time} onChange={upd("end_time")} required data-testid="create-end-time" />
+              <Label>End time</Label>
+              <DateTimePicker
+                value={form.end_time}
+                onChange={(d) => setForm((p) => ({ ...p, end_time: d }))}
+                testId="create-end"
+                placeholder="Pick end date"
+                minDate={form.start_time || new Date()}
+              />
             </div>
           </div>
         </div>
@@ -200,9 +221,4 @@ export default function CreateAuction() {
       </form>
     </div>
   );
-}
-
-function toLocalInput(d) {
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

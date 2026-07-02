@@ -7,6 +7,7 @@ import {
   Zap, Bell, Heart, Star, ImagePlus, TrendingUp, Sparkles, HandCoins, Timer,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import ContactForm from "@/components/ContactForm";
 
 const FEATURES = [
   {
@@ -93,14 +94,8 @@ const CONTACTS = [
   {
     icon: Phone,
     label: "Support line",
-    value: "+91 98765 43210",
-    href: "tel:+919876543210",
-  },
-  {
-    icon: Phone,
-    label: "Escalations",
-    value: "+91 91234 56789",
-    href: "tel:+919123456789",
+    value: "+91 82606 65966",
+    href: "tel:+918260665966",
   },
 ];
 
@@ -153,7 +148,7 @@ export default function About() {
               </div>
               <div className="card-surface p-5">
                 <div className="overline mb-1 text-[#8A8A8A]">FOUNDED</div>
-                <p className="text-sm font-semibold">2023 · Karnataka, India</p>
+                <p className="text-sm font-semibold">2023 · Odisha, India</p>
               </div>
               <div className="card-surface p-5">
                 <div className="overline mb-1 text-[#8A8A8A]">STACK</div>
@@ -209,58 +204,64 @@ export default function About() {
 
         {/* -------- Contact tab -------- */}
         <TabsContent value="contact" className="mt-2">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="card-surface p-6">
-              <h2 className="mb-4 font-display text-2xl font-bold">Get in touch</h2>
-              <p className="mb-6 text-[#5C5C5C]">
-                We reply to most enquiries within one business day. For urgent auction issues, use the support line.
-              </p>
-              <div className="space-y-3">
-                {CONTACTS.map((c) => {
-                  const Icon = c.icon;
-                  return (
-                    <a
-                      key={c.value}
-                      href={c.href}
-                      className="flex items-start gap-3 rounded-md border border-black/10 p-3 transition hover:border-[#1C3F35] hover:bg-[#F0EDE6]/60"
-                      data-testid={`contact-${c.label.replace(/\s+/g, "-").toLowerCase()}`}
-                    >
-                      <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#F0EDE6] text-[#1C3F35]">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="overline text-[#8A8A8A]">{c.label}</div>
-                        <div className="mono truncate text-sm font-semibold">{c.value}</div>
-                      </div>
-                    </a>
-                  );
-                })}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-6">
+              <div className="card-surface p-6">
+                <h2 className="mb-4 font-display text-2xl font-bold">Get in touch</h2>
+                <p className="mb-6 text-[#5C5C5C]">
+                  We reply to most enquiries within one business day. For urgent auction issues, use the support line.
+                </p>
+                <div className="space-y-3">
+                  {CONTACTS.map((c) => {
+                    const Icon = c.icon;
+                    return (
+                      <a
+                        key={c.value}
+                        href={c.href}
+                        className="flex items-start gap-3 rounded-md border border-black/10 p-3 transition hover:border-[#1C3F35] hover:bg-[#F0EDE6]/60"
+                        data-testid={`contact-${c.label.replace(/\s+/g, "-").toLowerCase()}`}
+                      >
+                        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#F0EDE6] text-[#1C3F35]">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="overline text-[#8A8A8A]">{c.label}</div>
+                          <div className="mono truncate text-sm font-semibold">{c.value}</div>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="card-surface p-6">
+                <h3 className="mb-4 font-display text-lg font-bold">Support hours</h3>
+                <div className="mb-4 space-y-3">
+                  <HoursRow icon={Clock} label="Mon – Fri" value="09:00 – 20:00 IST" />
+                  <HoursRow icon={Clock} label="Saturday" value="10:00 – 18:00 IST" />
+                  <HoursRow icon={Clock} label="Sunday" value="Closed (email only)" />
+                </div>
+
+                <h3 className="mb-3 mt-6 font-display text-lg font-bold">Departments</h3>
+                <div className="space-y-2">
+                  <DeptRow role="Seller onboarding" email="sellers@bidbridge.com" />
+                  <DeptRow role="Bidder support" email="help@bidbridge.com" />
+                  <DeptRow role="Disputes & moderation" email="disputes@bidbridge.com" />
+                  <DeptRow role="Business partnerships" email="partners@bidbridge.com" />
+                  <DeptRow role="Press & media" email="press@bidbridge.com" />
+                </div>
+
+                <div className="mt-6 rounded-md bg-[#1C3F35] p-4 text-white">
+                  <div className="overline mb-1 text-white/70">FOR ADMINS</div>
+                  <div className="text-sm">
+                    Admin console lives at <Link to="/admin" className="underline">/admin</Link>. Contact submissions are viewable there.
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="card-surface p-6">
-              <h2 className="mb-4 font-display text-2xl font-bold">Support hours</h2>
-              <div className="mb-4 space-y-3">
-                <HoursRow icon={Clock} label="Mon – Fri" value="09:00 – 20:00 IST" />
-                <HoursRow icon={Clock} label="Saturday" value="10:00 – 18:00 IST" />
-                <HoursRow icon={Clock} label="Sunday" value="Closed (email only)" />
-              </div>
-
-              <h3 className="mb-3 mt-6 font-display text-lg font-bold">Departments</h3>
-              <div className="space-y-2">
-                <DeptRow role="Seller onboarding" email="sellers@bidbridge.com" />
-                <DeptRow role="Bidder support" email="help@bidbridge.com" />
-                <DeptRow role="Disputes & moderation" email="disputes@bidbridge.com" />
-                <DeptRow role="Business partnerships" email="partners@bidbridge.com" />
-                <DeptRow role="Press & media" email="press@bidbridge.com" />
-              </div>
-
-              <div className="mt-6 rounded-md bg-[#1C3F35] p-4 text-white">
-                <div className="overline mb-1 text-white/70">FOR ADMINS</div>
-                <div className="text-sm">
-                  Admin console lives at <Link to="/admin" className="underline">/admin</Link>. Sign in with an admin account to access it.
-                </div>
-              </div>
+            <div>
+              <ContactForm />
             </div>
           </div>
         </TabsContent>
@@ -279,16 +280,15 @@ export default function About() {
                 </div>
               </div>
               <address className="not-italic text-[#111]">
-                <div>4th Floor, Innovation Block</div>
-                <div>Dr. Ambedkar Institute of Technology</div>
-                <div>Outer Ring Road, Mallathahalli</div>
-                <div>Bengaluru, Karnataka <span className="mono">560 056</span></div>
+                <div>037, 96(C), Charigharia Sahi</div>
+                <div>Athmallik (NAC), Athmallik</div>
+                <div>Angul, Odisha <span className="mono">759 125</span></div>
                 <div>India</div>
               </address>
               <div className="mt-4 flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-[#1C3F35]" />
                 <a
-                  href="https://www.google.com/maps/search/?api=1&query=Dr.+Ambedkar+Institute+of+Technology+Bengaluru"
+                  href="https://www.google.com/maps/search/?api=1&query=Charigharia+Sahi+Athmallik+Angul+Odisha+759125"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-[#1C3F35] underline underline-offset-4"
@@ -305,15 +305,15 @@ export default function About() {
                 <h3 className="font-display text-lg font-bold">Where we operate</h3>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <RegionCard city="Bengaluru" label="Headquarters" note="Engineering + operations" />
-                <RegionCard city="Mumbai" label="Sales office" note="Business partnerships" />
-                <RegionCard city="Delhi NCR" label="Sales office" note="Buyer onboarding" />
+                <RegionCard city="Athmallik" label="Headquarters" note="Engineering + operations" />
+                <RegionCard city="Angul" label="Regional office" note="Business partnerships" />
+                <RegionCard city="Bhubaneswar" label="Support hub" note="Seller onboarding" />
                 <RegionCard city="Remote" label="Distributed" note="Support, moderation, QA" />
               </div>
               <div className="mt-6 rounded-md border border-dashed border-[#1C3F35]/30 p-4">
                 <div className="overline mb-1 text-[#1C3F35]">MAILING ADDRESS</div>
                 <p className="text-sm">
-                  Please address all physical correspondence to the Bengaluru HQ.
+                  Please address all physical correspondence to the Athmallik HQ.
                   Include your BidBridge username or auction ID on the envelope for faster routing.
                 </p>
               </div>
@@ -327,7 +327,7 @@ export default function About() {
             <div className="aspect-[16/6] w-full">
               <iframe
                 title="BidBridge HQ map"
-                src="https://www.google.com/maps?q=Dr.+Ambedkar+Institute+of+Technology+Bengaluru&output=embed"
+                src="https://www.google.com/maps?q=Charigharia+Sahi+Athmallik+Angul+Odisha+759125&output=embed"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

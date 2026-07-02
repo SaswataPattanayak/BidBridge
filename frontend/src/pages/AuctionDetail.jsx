@@ -129,7 +129,9 @@ export default function AuctionDetail() {
         await api.post(`/watchlist/${id}`);
         setWatchlisted(true);
       }
-    } catch {}
+    } catch (err) {
+      console.warn("watchlist toggle failed:", err.message);
+    }
   };
 
   if (loading) return <div className="mx-auto max-w-7xl px-5 py-20 text-center text-[#8A8A8A]">Loading auction...</div>;

@@ -156,8 +156,8 @@ export default function Layout({ children }) {
                 Real-time auctions for collectors, curators & sellers. Curated marketplace, transparent bidding, soft-close protection.
               </div>
               <div className="mono mt-4 text-xs text-[#8A8A8A]">
-                4th Floor, Innovation Block · Dr. Ambedkar Institute of Technology<br />
-                Bengaluru, Karnataka 560 056 · India
+                037, 96(C), Charigharia Sahi · Athmallik (NAC), Athmallik<br />
+                Angul, Odisha 759 125 · India
               </div>
             </div>
             <div>
@@ -174,14 +174,14 @@ export default function Layout({ children }) {
               <ul className="space-y-2 text-sm">
                 <li><a href="mailto:contact@bidbridge.com" className="mono hover:text-[#1C3F35]">contact@bidbridge.com</a></li>
                 <li><a href="mailto:help@bidbridge.com" className="mono hover:text-[#1C3F35]">help@bidbridge.com</a></li>
-                <li><a href="tel:+919876543210" className="mono hover:text-[#1C3F35]">+91 98765 43210</a></li>
+                <li><a href="tel:+918260665966" className="mono hover:text-[#1C3F35]">+91 82606 65966</a></li>
                 <li><Link to="/about" className="hover:text-[#1C3F35]" data-testid="footer-contact">All contact details →</Link></li>
               </ul>
             </div>
           </div>
           <div className="mt-8 flex items-center justify-between border-t border-black/10 pt-4">
             <div className="mono overline text-[#8A8A8A]">© BIDBRIDGE 2026</div>
-            <div className="mono overline text-[#8A8A8A]">MADE IN BENGALURU</div>
+            <div className="mono overline text-[#8A8A8A]">MADE IN ODISHA</div>
           </div>
         </div>
       </footer>
