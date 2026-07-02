@@ -18,7 +18,6 @@ from typing import List, Optional, Literal, Any
 import socketio
 from bson import ObjectId
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Query
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from starlette.middleware.cors import CORSMiddleware
 
@@ -33,14 +32,11 @@ from auth import (
     get_current_user,
     get_current_admin,
 )
+from db import db, mongo_client
 
 # ---------------------------------------------------------------------------
 # DB & app setup
 # ---------------------------------------------------------------------------
-mongo_url = os.environ["MONGO_URL"]
-mongo_client = AsyncIOMotorClient(mongo_url)
-db = mongo_client[os.environ["DB_NAME"]]
-
 fastapi_app = FastAPI(title="BidBridge API")
 api = APIRouter(prefix="/api")
 
@@ -655,6 +651,38 @@ _bid_lock = asyncio.Lock()
 SOFT_CLOSE_WINDOW_SECONDS = 60
 
 
+def _validate_bid_against_auction(auction: dict, user: dict, amount: float) -> float:
+    """Return the accepted amount or raise HTTPException.
+
+    Rules:
+      - auction must be live
+      - user cannot bid on their own auction
+      - amount must be >= current + min_increment (or >= starting_price for first bid)
+    """
+    current_status = compute_status(auction)
+    if current_status != "live":
+        raise HTTPException(status_code=400, detail=f"Auction is {current_status}, cannot bid")
+    if auction["seller_id"] == user["id"]:
+        raise HTTPException(status_code=400, detail="Sellers cannot bid on their own auctions")
+    current = float(auction.get("current_bid", auction["starting_price"]))
+    min_next = current + float(auction.get("min_increment", 1)) if auction.get("bid_count", 0) > 0 else current
+    if amount < min_next:
+        raise HTTPException(status_code=400, detail=f"Bid must be at least ${min_next:.2f}")
+    return amount
+
+
+def _apply_soft_close(auction: dict) -> tuple[str, bool]:
+    """Return (new_end_iso, extended) — pushes end forward when a bid lands in
+    the final SOFT_CLOSE_WINDOW_SECONDS."""
+    end_dt = parse_dt(auction["end_time"])
+    seconds_remaining = (end_dt - now_utc()).total_seconds()
+    if 0 < seconds_remaining <= SOFT_CLOSE_WINDOW_SECONDS:
+        new_end_dt = now_utc() + timedelta(seconds=SOFT_CLOSE_WINDOW_SECONDS)
+        if new_end_dt > end_dt:
+            return new_end_dt.isoformat(), True
+    return auction["end_time"], False
+
+
 @api.post("/auctions/{auction_id}/bids")
 async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_user)):
     if user["role"] == "admin":
@@ -665,32 +693,14 @@ async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_us
         raise HTTPException(status_code=404, detail="Auction not found")
 
     async with _bid_lock:
-        a = await db.auctions.find_one({"_id": oid})
-        if not a:
+        auction = await db.auctions.find_one({"_id": oid})
+        if not auction:
             raise HTTPException(status_code=404, detail="Auction not found")
-        current_status = compute_status(a)
-        if current_status != "live":
-            raise HTTPException(status_code=400, detail=f"Auction is {current_status}, cannot bid")
-        if a["seller_id"] == user["id"]:
-            raise HTTPException(status_code=400, detail="Sellers cannot bid on their own auctions")
-        current = float(a.get("current_bid", a["starting_price"]))
-        min_next = current + float(a.get("min_increment", 1)) if a.get("bid_count", 0) > 0 else current
-        if body.amount < min_next:
-            raise HTTPException(status_code=400, detail=f"Bid must be at least ${min_next:.2f}")
 
-        previous_bidder = a.get("highest_bidder_id")
+        _validate_bid_against_auction(auction, user, body.amount)
 
-        # Soft-close extension logic ------------------------------------------------
-        end_dt = parse_dt(a["end_time"])
-        seconds_remaining = (end_dt - now_utc()).total_seconds()
-        extended = False
-        new_end_iso = a["end_time"]
-        if 0 < seconds_remaining <= SOFT_CLOSE_WINDOW_SECONDS:
-            new_end_dt = now_utc() + timedelta(seconds=SOFT_CLOSE_WINDOW_SECONDS)
-            # Only push out (never pull in) — extension always moves forward
-            if new_end_dt > end_dt:
-                new_end_iso = new_end_dt.isoformat()
-                extended = True
+        previous_bidder = auction.get("highest_bidder_id")
+        new_end_iso, extended = _apply_soft_close(auction)
 
         bid_doc = {
             "auction_id": auction_id,
@@ -721,38 +731,25 @@ async def place_bid(auction_id: str, body: BidInput, user=Depends(get_current_us
         "amount": body.amount,
         "created_at": bid_doc["created_at"],
         "current_bid": body.amount,
-        "bid_count": a.get("bid_count", 0) + 1,
+        "bid_count": auction.get("bid_count", 0) + 1,
         "end_time": iso(parse_dt(new_end_iso)),
         "extended": extended,
         "extension_seconds": SOFT_CLOSE_WINDOW_SECONDS if extended else 0,
     }
-    # Broadcast bid update to everyone in the auction room
     await sio.emit("new_bid", bid_payload, room=f"auction:{auction_id}")
 
-    # Notify previous highest bidder
     if previous_bidder and previous_bidder != user["id"]:
-        outbid_msg = f"Your bid on '{a['title']}' was outbid. New high bid: ${body.amount:.2f}."
+        outbid_msg = f"Your bid on '{auction['title']}' was outbid. New high bid: ${body.amount:.2f}."
         if extended:
             outbid_msg += f" Auction extended by {SOFT_CLOSE_WINDOW_SECONDS}s — you still have time to bid back."
-        await create_notification(
-            previous_bidder,
-            "outbid",
-            "You've been outbid!",
-            outbid_msg,
-            auction_id=auction_id,
-        )
-    # Notify seller
-    if a["seller_id"] != user["id"]:
-        seller_msg = f"{user['name']} bid ${body.amount:.2f} on '{a['title']}'."
+        await create_notification(previous_bidder, "outbid", "You've been outbid!", outbid_msg, auction_id=auction_id)
+
+    if auction["seller_id"] != user["id"]:
+        seller_msg = f"{user['name']} bid ${body.amount:.2f} on '{auction['title']}'."
         if extended:
             seller_msg += f" Auction extended by {SOFT_CLOSE_WINDOW_SECONDS}s (soft-close)."
-        await create_notification(
-            a["seller_id"],
-            "new_bid",
-            "New bid on your auction",
-            seller_msg,
-            auction_id=auction_id,
-        )
+        await create_notification(auction["seller_id"], "new_bid", "New bid on your auction", seller_msg, auction_id=auction_id)
+
     return bid_payload
 
 

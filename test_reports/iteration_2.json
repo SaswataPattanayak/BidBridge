@@ -1,0 +1,31 @@
+{
+  "summary": "Post-refactor regression sweep. Backend: 21/21 pytest cases pass (up from 13/17 in iteration_1) — includes the 3 previously-failing bugs (feedback ObjectId leak, brute-force lockout, GET /api/ root) all now fixed. Added new coverage: admin-can-not-bid (403), logout, soft-close (both extension and no-extension paths), and Socket.IO new_bid event schema. Frontend smoke: home + browse + login (admin/bidder/seller) + auction detail + admin console + notifications bell all render correctly with no console errors after auth. Circular-import cleanup (db.py) is working — backend restarts clean, no import errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/auctions/new (CreateAuction)", "issues": ["Still uses browser-native <input type=datetime-local> for start/end time instead of shadcn Calendar+Popover. Carried over from iteration_1 — not fixed in this refactor pass."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional / low priority) Replace native datetime-local pickers on /auctions/new with shadcn Calendar for design consistency.",
+    "(Optional / carry-over from iteration_1 code review) server.py is 1018 lines — consider splitting into auth/auctions/bids/admin/sockets modules for maintainability. db.py extraction is a good first step, keep going.",
+    "(Optional) _bid_lock is still a single global asyncio.Lock — bottleneck for concurrent auctions. Consider per-auction lock dict or MongoDB findOneAndUpdate atomic."
+  ],
+  "critical_code_review_comments": [
+    "Refactors look clean: db.py extraction resolves the circular import, _validate_bid_against_auction / _apply_soft_close are small and testable, timedelta import is proper, AuthContext/NotificationsContext memoization uses useMemo+useCallback correctly, image keys switched to URL (removes React key-collision warnings on reorder), console.warn instead of empty catches — good for future debugging.",
+    "Soft-close correctness verified end-to-end: bid at T-30s extends end_time to T+60s and payload flags extended=true/extension_seconds=60; bid at T-5min leaves end_time untouched and returns extended=false/extension_seconds=0. Socket.IO new_bid payload correctly carries end_time/extended/extension_seconds fields.",
+    "server.py line count (1018) still exceeds the 700-line guideline; split into modules recommended in a future pass.",
+    "Global _bid_lock across all auctions is still a scalability concern (unchanged since iteration_1)."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (21/21)", "frontend": "100% of critical flows verified"},
+  "test_credentials": "admin@bidbridge.com / Admin@12345 · seller@bidbridge.com / Seller@12345 · bidder@bidbridge.com / Bidder@12345 — all validated.",
+  "seed_data_creation": "Backend auto-seeds admin/seller/bidder + 8 categories + 4 demo auctions on startup. Tests also create TEST_-prefixed auctions (deleted by soft-close test on completion; others left in place for UI verification).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "backend_test.py now has 21 tests covering all documented endpoints + soft-close + Socket.IO. To re-run: `cd /app/backend && python -m pytest tests/backend_test.py -v`. Requires websocket-client (auto-installed by this iteration) and pymongo (already installed) — test reads MONGO_URL/DB_NAME directly from /app/backend/.env stripping surrounding quotes. Socket.IO test connects via polling transport at /api/socket.io with Bearer token from login response body.",
+  "rca_of_the_issue": "N/A — all previously-reported iteration_1 bugs (feedback ObjectId leak, brute-force lockout, GET /api/) are verified fixed and stayed fixed after the refactor. Soft-close feature works exactly per spec (SOFT_CLOSE_WINDOW_SECONDS=60)."
+}

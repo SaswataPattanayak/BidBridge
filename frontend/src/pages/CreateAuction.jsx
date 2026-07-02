@@ -136,7 +136,7 @@ export default function CreateAuction() {
           {form.images.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-2 md:grid-cols-6">
               {form.images.map((img, i) => (
-                <div key={i} className="relative aspect-square overflow-hidden rounded-md border border-black/10">
+                <div key={img} className="relative aspect-square overflow-hidden rounded-md border border-black/10">
                   <img src={img} alt="" className="h-full w-full object-cover" />
                   <button type="button" onClick={() => removeImage(i)} className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-white/90 hover:bg-white" data-testid={`create-image-remove-${i}`}>
                     <X className="h-3 w-3" />
@@ -150,7 +150,7 @@ export default function CreateAuction() {
             <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
               {DEFAULT_IMAGES.map((url, i) => (
                 <button
-                  key={i}
+                  key={url}
                   type="button"
                   onClick={() => addSample(url)}
                   className="aspect-square overflow-hidden rounded-md border border-black/10 opacity-80 transition hover:opacity-100 hover:border-[#1C3F35]"

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { api, formatApiErrorDetail } from "@/lib/api";
 
 const AuthContext = createContext(null);
@@ -12,7 +12,9 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await api.get("/auth/me");
       setUser(data);
-    } catch {
+    } catch (err) {
+      // 401 on first mount is expected (no session yet). Log others.
+      if (err?.response?.status !== 401) console.warn("auth/me failed:", err.message);
       setUser(false);
     } finally {
       setInitialized(true);
@@ -23,7 +25,7 @@ export function AuthProvider({ children }) {
     refresh();
   }, [refresh]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       setUser(data.user);
@@ -31,9 +33,9 @@ export function AuthProvider({ children }) {
     } catch (e) {
       return { ok: false, error: formatApiErrorDetail(e.response?.data?.detail) || e.message };
     }
-  };
+  }, []);
 
-  const register = async (payload) => {
+  const register = useCallback(async (payload) => {
     try {
       const { data } = await api.post("/auth/register", payload);
       setUser(data.user);
@@ -41,18 +43,23 @@ export function AuthProvider({ children }) {
     } catch (e) {
       return { ok: false, error: formatApiErrorDetail(e.response?.data?.detail) || e.message };
     }
-  };
+  }, []);
 
-  const logout = async () => {
-    try { await api.post("/auth/logout"); } catch {}
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (err) {
+      console.warn("logout request failed:", err.message);
+    }
     setUser(false);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, initialized, login, register, logout, refresh, setUser }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, initialized, login, register, logout, refresh, setUser }),
+    [user, initialized, login, register, logout, refresh]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

@@ -2,12 +2,21 @@ import React from "react";
 import { Link } from "react-router-dom";
 import CountdownTimer from "./CountdownTimer";
 
+function statusBadge(status) {
+  if (status === "live") return { text: "LIVE", cls: "text-[#2E6D4E]", dot: "live-dot" };
+  if (status === "upcoming") return { text: "UPCOMING", cls: "text-[#5C5C5C]", dot: "" };
+  return { text: "ENDED", cls: "text-[#8A8A8A]", dot: "" };
+}
+
+function countdownLabel(status) {
+  if (status === "upcoming") return "Starts In";
+  if (status === "live") return "Ends In";
+  return "Closed";
+}
+
 export default function AuctionCard({ a }) {
   const img = a.images?.[0] || "https://images.pexels.com/photos/31513715/pexels-photo-31513715.jpeg";
-  const badge =
-    a.status === "live" ? { text: "LIVE", cls: "text-[#2E6D4E]", dot: "live-dot" }
-    : a.status === "upcoming" ? { text: "UPCOMING", cls: "text-[#5C5C5C]", dot: "" }
-    : { text: "ENDED", cls: "text-[#8A8A8A]", dot: "" };
+  const badge = statusBadge(a.status);
 
   return (
     <Link
@@ -44,9 +53,7 @@ export default function AuctionCard({ a }) {
             </div>
           </div>
           <div className="text-right">
-            <div className="overline mb-1 text-[#8A8A8A]">
-              {a.status === "upcoming" ? "Starts In" : a.status === "live" ? "Ends In" : "Closed"}
-            </div>
+            <div className="overline mb-1 text-[#8A8A8A]">{countdownLabel(a.status)}</div>
             <CountdownTimer endTime={a.end_time} startTime={a.start_time} status={a.status} size="sm" />
           </div>
         </div>

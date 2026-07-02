@@ -301,3 +301,145 @@ def test_admin_forbidden_for_bidder():
     b_sess = login_session(BIDDER)
     r = b_sess.get(f"{API}/admin/stats", timeout=10)
     assert r.status_code == 403
+
+
+# ---------------- Admin cannot bid (403) ----------------
+def test_admin_cannot_bid():
+    a_sess = login_session(ADMIN)
+    auctions = requests.get(f"{API}/auctions", params={"status": "live"}, timeout=10).json()
+    assert auctions
+    aid = auctions[0]["id"]
+    amt = float(auctions[0]["current_bid"]) + float(auctions[0].get("min_increment", 1))
+    r = a_sess.post(f"{API}/auctions/{aid}/bids", json={"amount": amt}, timeout=10)
+    assert r.status_code == 403, r.text
+
+
+# ---------------- Logout ----------------
+def test_logout():
+    s = login_session(BIDDER)
+    r = s.post(f"{API}/auth/logout", timeout=10)
+    assert r.status_code == 200
+
+
+# ---------------- Soft-close (critical feature) ----------------
+def test_soft_close_extends_end_time():
+    """Force an auction end_time to ~30s ahead, place a bid, verify extended=true and new end pushed by ~60s."""
+    import pymongo
+    from datetime import datetime, timezone, timedelta
+    mongo_url = None
+    db_name = None
+    with open("/app/backend/.env") as f:
+        for line in f:
+            if line.startswith("MONGO_URL="):
+                mongo_url = line.split("=", 1)[1].strip().strip('"').strip("'")
+            elif line.startswith("DB_NAME="):
+                db_name = line.split("=", 1)[1].strip().strip('"').strip("'")
+    client = pymongo.MongoClient(mongo_url)
+    db = client[db_name]
+
+    # Create a fresh auction as seller
+    s_sess = login_session(SELLER)
+    now = datetime.now(timezone.utc)
+    payload = {
+        "title": f"TEST SoftClose {uuid.uuid4().hex[:6]}",
+        "description": "Soft close regression",
+        "category": "Electronics",
+        "images": [],
+        "starting_price": 50.0,
+        "min_increment": 5.0,
+        "start_time": (now - timedelta(minutes=1)).isoformat(),
+        "end_time": (now + timedelta(hours=1)).isoformat(),
+        "condition": "New",
+    }
+    created = s_sess.post(f"{API}/auctions", json=payload, timeout=15).json()
+    aid = created["id"]
+
+    from bson import ObjectId
+    # --- Case 1: end_time in 30s -> bid should extend by 60s ---
+    new_end = datetime.now(timezone.utc) + timedelta(seconds=30)
+    db.auctions.update_one({"_id": ObjectId(aid)}, {"$set": {"end_time": new_end.isoformat()}})
+
+    b_sess = login_session(BIDDER)
+    r = b_sess.post(f"{API}/auctions/{aid}/bids", json={"amount": 50.0}, timeout=15)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("extended") is True, f"Expected extended=true, got {body}"
+    assert body.get("extension_seconds") == 60, f"Expected 60, got {body.get('extension_seconds')}"
+    end_dt = datetime.fromisoformat(body["end_time"].replace("Z", "+00:00"))
+    delta = (end_dt - datetime.now(timezone.utc)).total_seconds()
+    assert 50 <= delta <= 70, f"end_time should be ~60s ahead, got {delta}s"
+
+    # --- Case 2: end_time in 5 min -> bid should NOT extend ---
+    far_end = datetime.now(timezone.utc) + timedelta(minutes=5)
+    db.auctions.update_one({"_id": ObjectId(aid)}, {"$set": {"end_time": far_end.isoformat()}})
+
+    r2 = b_sess.post(f"{API}/auctions/{aid}/bids", json={"amount": 55.0}, timeout=15)
+    assert r2.status_code == 200, r2.text
+    body2 = r2.json()
+    assert body2.get("extended") is False, f"Expected extended=false, got {body2}"
+    assert body2.get("extension_seconds") == 0
+    end_dt2 = datetime.fromisoformat(body2["end_time"].replace("Z", "+00:00"))
+    # Should still be ~5 min away, close to far_end
+    diff = abs((end_dt2 - far_end).total_seconds())
+    assert diff < 2, f"end_time should be unchanged (~far_end), diff={diff}s"
+
+    # cleanup
+    db.auctions.delete_one({"_id": ObjectId(aid)})
+    db.bids.delete_many({"auction_id": aid})
+
+
+# ---------------- Socket.IO real-time bid propagation ----------------
+def test_socketio_new_bid_event():
+    """Verify Socket.IO emits new_bid with soft-close fields after a REST bid."""
+    try:
+        import socketio  # python-socketio
+    except ImportError:
+        pytest.skip("python-socketio not installed")
+
+    # Login bidder to get token
+    b_sess = login_session(BIDDER)
+    token = b_sess.headers.get("Authorization", "").replace("Bearer ", "")
+
+    auctions = requests.get(f"{API}/auctions", params={"status": "live"}, timeout=10).json()
+    assert auctions
+    a = auctions[0]
+    aid = a["id"]
+
+    received = []
+    sio = socketio.Client(reconnection=False)
+
+    @sio.on("new_bid")
+    def on_new_bid(data):
+        received.append(data)
+
+    try:
+        sio.connect(
+            BASE_URL,
+            socketio_path="/api/socket.io",
+            auth={"token": token} if token else None,
+            transports=["polling"],
+            wait_timeout=15,
+        )
+    except Exception as e:
+        pytest.skip(f"Socket.IO connect failed: {e}")
+
+    sio.emit("join_auction", {"auction_id": aid})
+    time.sleep(1)
+
+    # Place a bid via REST
+    cur = float(a["current_bid"])
+    inc = float(a.get("min_increment", 1))
+    amt = cur + inc if a.get("bid_count", 0) > 0 else cur
+    r = b_sess.post(f"{API}/auctions/{aid}/bids", json={"amount": amt}, timeout=15)
+    assert r.status_code == 200, r.text
+
+    # Wait for event
+    deadline = time.time() + 5
+    while not received and time.time() < deadline:
+        time.sleep(0.2)
+
+    sio.disconnect()
+    assert received, "No new_bid event received via Socket.IO"
+    evt = received[0]
+    for k in ["end_time", "extended", "extension_seconds", "amount", "current_bid"]:
+        assert k in evt, f"new_bid payload missing '{k}': {evt}"

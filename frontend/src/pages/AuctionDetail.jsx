@@ -45,9 +45,12 @@ export default function AuctionDetail() {
   // load watchlist state
   useEffect(() => {
     if (!user) return;
-    api.get("/watchlist").then(({ data }) => {
-      setWatchlisted(data.some((x) => x.id === id));
-    }).catch(() => {});
+    api
+      .get("/watchlist")
+      .then(({ data }) => {
+        setWatchlisted(data.some((x) => x.id === id));
+      })
+      .catch((err) => console.warn("watchlist fetch failed:", err.message));
   }, [user, id]);
 
   // Socket.IO real-time
@@ -153,7 +156,7 @@ export default function AuctionDetail() {
             <div className="mt-3 grid grid-cols-6 gap-2">
               {a.images.map((img, i) => (
                 <button
-                  key={i}
+                  key={img}
                   onClick={() => setActiveImage(i)}
                   className={`aspect-square overflow-hidden rounded-md border ${activeImage === i ? "border-[#1C3F35]" : "border-black/10"}`}
                   data-testid={`auction-thumb-${i}`}

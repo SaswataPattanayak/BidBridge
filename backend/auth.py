@@ -90,7 +90,7 @@ def _extract_token(request: Request) -> Optional[str]:
 
 
 async def get_current_user(request: Request):
-    from server import db  # avoid circular
+    from db import db  # shared handle; not a circular import
 
     token = _extract_token(request)
     if not token:
@@ -105,11 +105,12 @@ async def get_current_user(request: Request):
     if payload.get("type") != "access":
         raise HTTPException(status_code=401, detail="Invalid token type")
 
+    user: Optional[dict] = None
     try:
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid user id")
-    if not user:
+    if user is None:
         raise HTTPException(status_code=401, detail="User not found")
     user["id"] = str(user.pop("_id"))
     user.pop("password_hash", None)
