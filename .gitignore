@@ -80,3 +80,30 @@ memory/test_credentials.md
 
 # Mobile development
 android-sdk/
+
+
+# BidBridge environment files - NEVER upload secrets
+.env
+*.env
+!.env.example
+
+# Python virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node dependencies
+node_modules/
+
+# MongoDB backup files
+mongodb_backup/
+
+# Generated IDE files
+.restore-complete
+
+# Local test/debug files
+*.log
+
