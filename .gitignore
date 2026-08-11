@@ -107,3 +107,5 @@ mongodb_backup/
 # Local test/debug files
 *.log
 
+# Emergent IDE/tool metadata
+.emergent/
