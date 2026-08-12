@@ -437,7 +437,7 @@ async def login(body: LoginInput, request: Request, response: Response):
 
 
 @api.post("/auth/logout")
-async def logout(response: Response, user=Depends(get_current_user)):
+async def logout(response: Response):
     clear_auth_cookies(response)
     return {"success": True}
 
