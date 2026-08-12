@@ -110,3 +110,7 @@ mongodb_backup/
 # Emergent IDE/tool metadata
 .emergent/
 
+# Local MongoDB database files
+mongodb_data/
+
+
