@@ -137,7 +137,7 @@ export default function About() {
               </p>
               <p className="text-[#111]">
                 Today BidBridge hosts curated auctions across watches, cars, art, furniture, electronics, and more —
-                built on a modern real-time stack (React + FastAPI + MongoDB + Socket.IO) that scales to thousands of concurrent bidders.
+                built on a modern real-time stack (React + Python + FastAPI + MongoDB + Socket.IO) , with secure authentication, role-based access, and real-time bidding.
               </p>
             </div>
 
@@ -152,7 +152,7 @@ export default function About() {
               </div>
               <div className="card-surface p-5">
                 <div className="overline mb-1 text-[#8A8A8A]">STACK</div>
-                <p className="mono text-xs text-[#5C5C5C]">React · FastAPI · MongoDB · Socket.IO</p>
+                <p className="mono text-xs text-[#5C5C5C]">React · FastAPI Python · MongoDB · Socket.IO </p>
               </div>
             </div>
           </div>
