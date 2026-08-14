@@ -52,31 +52,70 @@ def create_refresh_token(user_id: str) -> str:
 def decode_token(token: str) -> dict:
     return jwt.decode(token, _secret(), algorithms=[JWT_ALGORITHM])
 
+# ---------------------------------------------------------------------------
+# Auth cookie configuration
+# ---------------------------------------------------------------------------
+
+IS_PRODUCTION = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+
+# Localhost:
+#   secure=False
+#   samesite="lax"
+#
+# Production:
+#   secure=True
+#   samesite="none"
+#
+# This allows the same code to work locally and after deployment.
+
+COOKIE_SECURE = IS_PRODUCTION
+COOKIE_SAMESITE = "none" if IS_PRODUCTION else "lax"
+
 
 def set_auth_cookies(response, access_token: str, refresh_token: str) -> None:
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
         max_age=ACCESS_TOKEN_MINUTES * 60,
         path="/",
     )
+
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
         max_age=REFRESH_TOKEN_DAYS * 24 * 60 * 60,
         path="/",
     )
 
 
 def clear_auth_cookies(response) -> None:
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
+    response.set_cookie(
+        key="access_token",
+        value="",
+        max_age=0,
+        expires=0,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/",
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value="",
+        max_age=0,
+        expires=0,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/",
+    )
 
 
 def _extract_token(request: Request) -> Optional[str]:

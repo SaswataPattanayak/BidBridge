@@ -3,6 +3,7 @@
 FastAPI + MongoDB + Socket.IO. All API routes prefixed with /api. Socket.IO
 mounted at /api/socket.io so kubernetes ingress routes it to backend.
 """
+
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -22,6 +23,9 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from starlette.middleware.cors import CORSMiddleware
 
 from auth import (
+    IS_PRODUCTION,
+    COOKIE_SAMESITE,
+    COOKIE_SECURE,
     hash_password,
     verify_password,
     create_access_token,
@@ -439,7 +443,10 @@ async def login(body: LoginInput, request: Request, response: Response):
 @api.post("/auth/logout")
 async def logout(response: Response):
     clear_auth_cookies(response)
-    return {"success": True}
+    return {
+        "success": True,
+        "message": "Logged out successfully",
+    }
 
 
 @api.get("/auth/me")
@@ -473,8 +480,17 @@ async def update_profile(body: ProfileUpdate, user=Depends(get_current_user)):
     if update:
         await db.users.update_one({"_id": ObjectId(user["id"])}, {"$set": update})
     doc = await db.users.find_one({"_id": ObjectId(user["id"])})
-    return serialize_user(doc)
+    return serialize_user(doc) 
 
+
+@api.get("/auth/cookie-config")
+async def cookie_config():
+    return {
+        "environment": os.environ.get("ENVIRONMENT"),
+        "is_production": IS_PRODUCTION,
+        "cookie_secure": COOKIE_SECURE,
+        "cookie_samesite": COOKIE_SAMESITE,
+    }
 
 # ---------------------------------------------------------------------------
 # PASSWORD RESET
